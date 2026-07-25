@@ -1,0 +1,1170 @@
+/**
+ * js/editor.js
+ * Handles palette rendering, painting/erasing grid, pan, zoom, custom block dialogs, properties and logic editing UI.
+ */
+
+// Application and Editor State
+const state = {
+  currentTool: "brush", // brush, eraser, bucket, select
+  activeBlockId: "ground",
+  customBlocks: {}, // user created custom blocks
+
+  // Grid level settings
+  cols: 30,
+  rows: 16,
+  grid: [], // 2D array [row][col] storing block instances or null
+
+  // Selection state
+  selectedCell: null, // { r, c } or { paletteId: 'xxx' }
+  inspectingPaletteId: null,
+
+  // Pan & Zoom
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  gridlines: true,
+
+  // Global game physics & configurations
+  gravity: 0.5,
+  speed: 4.0,
+  lives: 3,
+  genre: "platformer", // platformer or topdown
+
+  // History for Undo/Redo
+  undoStack: [],
+  redoStack: []
+};
+
+// Canvas element refs
+const canvas = document.getElementById("game-canvas");
+const ctx = canvas.getContext("2d");
+const container = document.getElementById("canvas-container");
+
+// Block dimensions (base size)
+const TILE_SIZE = 32;
+
+// Initialize Editor
+function initEditor() {
+  loadFromLocalStorage();
+  buildPalettes();
+  setupEventListeners();
+  resizeCanvas();
+  renderGrid();
+  updateSelectionPanel();
+}
+
+// Save & Load to/from LocalStorage
+function saveToLocalStorage() {
+  const data = {
+    cols: state.cols,
+    rows: state.rows,
+    grid: state.grid,
+    customBlocks: state.customBlocks,
+    gravity: state.gravity,
+    speed: state.speed,
+    lives: state.lives,
+    genre: state.genre
+  };
+  localStorage.setItem("blocks_game_maker_data", JSON.stringify(data));
+}
+
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem("blocks_game_maker_data");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state.cols = parsed.cols || 30;
+      state.rows = parsed.rows || 16;
+      state.customBlocks = parsed.customBlocks || {};
+      state.gravity = parsed.gravity !== undefined ? parsed.gravity : 0.5;
+      state.speed = parsed.speed !== undefined ? parsed.speed : 4.0;
+      state.lives = parsed.lives || 3;
+      state.genre = parsed.genre || "platformer";
+      state.grid = parsed.grid || [];
+
+      // Validate/resize level grid array
+      adjustGridDimensions();
+      syncFormControls();
+    } else {
+      resetGridToEmpty();
+    }
+  } catch (e) {
+    console.error("Error loading local level data, starting fresh:", e);
+    resetGridToEmpty();
+  }
+}
+
+function syncFormControls() {
+  document.getElementById("input-grid-cols").value = state.cols;
+  document.getElementById("input-grid-rows").value = state.rows;
+  document.getElementById("input-gravity").value = state.gravity;
+  document.getElementById("label-gravity").textContent = state.gravity;
+  document.getElementById("input-speed").value = state.speed;
+  document.getElementById("label-speed").textContent = state.speed;
+  document.getElementById("select-lives").value = state.lives;
+  document.getElementById("select-genre").value = state.genre;
+}
+
+function resetGridToEmpty() {
+  state.grid = [];
+  for (let r = 0; r < state.rows; r++) {
+    const row = [];
+    for (let c = 0; c < state.cols; c++) {
+      row.push(null);
+    }
+    state.grid.push(row);
+  }
+  saveToLocalStorage();
+}
+
+function adjustGridDimensions() {
+  // Pad or trim row dimension
+  while (state.grid.length < state.rows) {
+    state.grid.push(new Array(state.cols).fill(null));
+  }
+  if (state.grid.length > state.rows) {
+    state.grid = state.grid.slice(0, state.rows);
+  }
+
+  // Pad or trim col dimension per row
+  for (let r = 0; r < state.rows; r++) {
+    if (!state.grid[r]) {
+      state.grid[r] = new Array(state.cols).fill(null);
+    }
+    while (state.grid[r].length < state.cols) {
+      state.grid[r].push(null);
+    }
+    if (state.grid[r].length > state.cols) {
+      state.grid[r] = state.grid[r].slice(0, state.cols);
+    }
+  }
+}
+
+// Help fetch block properties
+function getBlockById(id) {
+  if (DEFAULT_BLOCKS[id]) return DEFAULT_BLOCKS[id];
+  if (state.customBlocks[id]) return state.customBlocks[id];
+  return null;
+}
+
+// Build Drawing Palette Categories
+function buildPalettes() {
+  const solidsDiv = document.getElementById("palette-solids");
+  const hazardsDiv = document.getElementById("palette-hazards");
+  const interactivesDiv = document.getElementById("palette-interactives");
+  const actorsDiv = document.getElementById("palette-actors");
+  const customDiv = document.getElementById("palette-custom");
+
+  // Clear original contents
+  [solidsDiv, hazardsDiv, interactivesDiv, actorsDiv, customDiv].forEach(el => el.innerHTML = "");
+
+  const allBlocks = { ...DEFAULT_BLOCKS, ...state.customBlocks };
+
+  Object.values(allBlocks).forEach(block => {
+    // Generate Palette Item Node
+    const btn = document.createElement("button");
+    btn.className = `palette-item flex items-center space-x-2 p-2 bg-gray-800 hover:bg-gray-700 border rounded text-left transition text-xs ${state.activeBlockId === block.id ? 'border-purple-500 ring-2 ring-purple-500/30' : 'border-gray-700'}`;
+    btn.setAttribute("data-id", block.id);
+    btn.innerHTML = `
+      <span class="text-lg">${block.emoji || '🧱'}</span>
+      <span class="truncate font-semibold text-gray-200">${block.name}</span>
+    `;
+
+    btn.addEventListener("click", () => {
+      // Remove style ring from all other items
+      document.querySelectorAll(".palette-item").forEach(item => {
+        item.classList.remove("border-purple-500", "ring-2", "ring-purple-500/30");
+        item.classList.add("border-gray-700");
+      });
+      btn.classList.add("border-purple-500", "ring-2", "ring-purple-500/30");
+      btn.classList.remove("border-gray-700");
+
+      state.activeBlockId = block.id;
+
+      // Automatically inspect the palette item properties
+      state.selectedCell = null;
+      state.inspectingPaletteId = block.id;
+      updateSelectionPanel();
+    });
+
+    // Sort into tabs
+    if (state.customBlocks[block.id]) {
+      customDiv.appendChild(btn);
+    } else {
+      switch (block.category) {
+        case "solid":
+          solidsDiv.appendChild(btn);
+          break;
+        case "hazard":
+          hazardsDiv.appendChild(btn);
+          break;
+        case "collectible":
+          interactivesDiv.appendChild(btn);
+          break;
+        case "actor":
+          actorsDiv.appendChild(btn);
+          break;
+      }
+    }
+  });
+}
+
+// Update Right Panel Sidebar values on Block Inspect Select
+function updateSelectionPanel() {
+  const panelNoSelection = document.getElementById("property-no-selection");
+  const panelInfo = document.getElementById("property-selected-info");
+  const inputsDiv = document.getElementById("property-inputs");
+  const logicNoSel = document.getElementById("logic-no-selection");
+  const logicPanel = document.getElementById("logic-builder-panel");
+
+  let activeBlock = null;
+
+  if (state.selectedCell) {
+    // Grid cell inspection
+    const tileInstance = state.grid[state.selectedCell.r][state.selectedCell.c];
+    if (tileInstance) {
+      activeBlock = tileInstance;
+    }
+  } else if (state.inspectingPaletteId) {
+    // Palette selection properties inspect
+    activeBlock = getBlockById(state.inspectingPaletteId);
+  }
+
+  if (!activeBlock) {
+    // Show empty defaults
+    panelNoSelection.classList.remove("hidden");
+    panelInfo.classList.add("hidden");
+    inputsDiv.classList.add("hidden");
+    logicNoSel.classList.remove("hidden");
+    logicPanel.classList.add("hidden");
+    return;
+  }
+
+  // Populate visual details
+  panelNoSelection.classList.add("hidden");
+  panelInfo.classList.remove("hidden");
+  inputsDiv.classList.remove("hidden");
+  logicNoSel.classList.add("hidden");
+  logicPanel.classList.remove("hidden");
+
+  // Load properties details
+  document.getElementById("selected-block-preview").textContent = activeBlock.emoji || "🧱";
+  document.getElementById("selected-block-preview").style.backgroundColor = activeBlock.color + "22"; // 10% opacity border bg
+  document.getElementById("selected-block-preview").style.borderColor = activeBlock.color;
+  document.getElementById("selected-block-name").textContent = activeBlock.name;
+  document.getElementById("selected-block-type").textContent = activeBlock.category.toUpperCase();
+
+  // Load customizable inputs
+  document.getElementById("prop-tile-name").value = activeBlock.name;
+  document.getElementById("prop-tile-color").value = activeBlock.color;
+  document.getElementById("prop-tile-color-lbl").textContent = activeBlock.color.toUpperCase();
+  document.getElementById("prop-tile-emoji").value = activeBlock.emoji || "";
+  document.getElementById("prop-tile-solid").checked = !!activeBlock.solid;
+  document.getElementById("prop-tile-damage").value = activeBlock.damage !== undefined ? activeBlock.damage : 0;
+  document.getElementById("prop-tile-score").value = activeBlock.score !== undefined ? activeBlock.score : 0;
+
+  // Visual Custom Javascript script hook
+  document.getElementById("prop-tile-js").value = activeBlock.js || "";
+
+  // Render Visual Script Rows
+  renderVisualScriptRows(activeBlock);
+}
+
+// Render the Logic Event-Action cards
+function renderVisualScriptRows(activeBlock) {
+  const container = document.getElementById("script-rows-container");
+  container.innerHTML = "";
+
+  if (!activeBlock.scripts) activeBlock.scripts = [];
+
+  activeBlock.scripts.forEach((script, idx) => {
+    const row = document.createElement("div");
+    row.className = "bg-gray-950 p-2.5 border border-gray-800 rounded-lg space-y-2 text-xs relative";
+
+    // Build event selector options
+    let eventOptions = SCRIPT_EVENTS.map(ev =>
+      `<option value="${ev.id}" ${script.event === ev.id ? 'selected' : ''}>${ev.name}</option>`
+    ).join("");
+
+    // Build action selector options
+    let actionOptions = SCRIPT_ACTIONS.map(ac =>
+      `<option value="${ac.id}" ${script.action === ac.id ? 'selected' : ''}>${ac.name}</option>`
+    ).join("");
+
+    // Delete trigger button
+    row.innerHTML = `
+      <button class="absolute top-1 right-2 text-red-500 hover:text-red-400 font-bold" onclick="removeScriptRow(${idx})">
+        <i class="fas fa-trash-alt text-[10px]"></i>
+      </button>
+
+      <!-- Event select -->
+      <div class="space-y-1">
+        <label class="text-[9px] uppercase font-bold text-gray-500 font-mono block">When event trigger</label>
+        <select class="w-full bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-xs text-purple-300 font-mono" onchange="updateScriptEvent(${idx}, this.value)">
+          ${eventOptions}
+        </select>
+      </div>
+
+      <!-- Action select -->
+      <div class="space-y-1">
+        <label class="text-[9px] uppercase font-bold text-gray-500 font-mono block">Then instant action</label>
+        <select class="w-full bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-xs text-yellow-300 font-mono" onchange="updateScriptAction(${idx}, this.value)">
+          ${actionOptions}
+        </select>
+      </div>
+
+      <!-- Parameters Subpanel dynamically drawn based on action properties -->
+      <div class="script-params-panel space-y-1.5 pt-1.5 border-t border-gray-800/60">
+        ${renderActionParamsInputs(idx, script)}
+      </div>
+    `;
+
+    container.appendChild(row);
+  });
+}
+
+function renderActionParamsInputs(scriptIndex, script) {
+  const actionDef = SCRIPT_ACTIONS.find(a => a.id === script.action);
+  if (!actionDef || !actionDef.params || actionDef.params.length === 0) return "";
+
+  if (!script.params) script.params = {};
+
+  return actionDef.params.map(param => {
+    const val = script.params[param.key] !== undefined ? script.params[param.key] : param.default;
+
+    if (param.type === "number") {
+      return `
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] text-gray-400 font-mono">${param.label}:</span>
+          <input type="number" class="w-16 bg-gray-900 border border-gray-700 rounded px-1 text-right text-gray-200" value="${val}" onchange="updateScriptParam(${scriptIndex}, '${param.key}', this.value)" />
+        </div>
+      `;
+    } else if (param.type === "select") {
+      let options = param.options.map(o =>
+        `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`
+      ).join("");
+      return `
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] text-gray-400 font-mono">${param.label}:</span>
+          <select class="bg-gray-900 border border-gray-700 rounded px-1 text-gray-200" onchange="updateScriptParam(${scriptIndex}, '${param.key}', this.value)">
+            ${options}
+          </select>
+        </div>
+      `;
+    }
+    return "";
+  }).join("");
+}
+
+// Global scope logic modifiers accessible to generated nodes
+window.removeScriptRow = function(idx) {
+  let activeBlock = getInspectedBlock();
+  if (activeBlock && activeBlock.scripts) {
+    activeBlock.scripts.splice(idx, 1);
+    updateSelectionPanel();
+    saveToLocalStorage();
+  }
+};
+
+window.updateScriptEvent = function(idx, eventId) {
+  let activeBlock = getInspectedBlock();
+  if (activeBlock && activeBlock.scripts) {
+    activeBlock.scripts[idx].event = eventId;
+    saveToLocalStorage();
+  }
+};
+
+window.updateScriptAction = function(idx, actionId) {
+  let activeBlock = getInspectedBlock();
+  if (activeBlock && activeBlock.scripts) {
+    const actionDef = SCRIPT_ACTIONS.find(a => a.id === actionId);
+    activeBlock.scripts[idx].action = actionId;
+    activeBlock.scripts[idx].params = {};
+    if (actionDef && actionDef.params) {
+      actionDef.params.forEach(p => {
+        activeBlock.scripts[idx].params[p.key] = p.default;
+      });
+    }
+    updateSelectionPanel();
+    saveToLocalStorage();
+  }
+};
+
+window.updateScriptParam = function(idx, key, val) {
+  let activeBlock = getInspectedBlock();
+  if (activeBlock && activeBlock.scripts) {
+    if (!activeBlock.scripts[idx].params) activeBlock.scripts[idx].params = {};
+    activeBlock.scripts[idx].params[key] = isNaN(val) ? val : Number(val);
+    saveToLocalStorage();
+  }
+};
+
+function getInspectedBlock() {
+  if (state.selectedCell) {
+    return state.grid[state.selectedCell.r][state.selectedCell.c];
+  } else if (state.inspectingPaletteId) {
+    return getBlockById(state.inspectingPaletteId);
+  }
+  return null;
+}
+
+// Window sizing setup
+function resizeCanvas() {
+  const containerW = container.clientWidth;
+  const containerH = container.clientHeight;
+
+  // Level grid canvas size calculation
+  const calculatedW = state.cols * TILE_SIZE;
+  const calculatedH = state.rows * TILE_SIZE;
+
+  canvas.width = calculatedW;
+  canvas.height = calculatedH;
+
+  // Center elements if bounds fit nicely, otherwise apply pan transform
+  applyCanvasTransform();
+}
+
+function applyCanvasTransform() {
+  canvas.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
+  document.getElementById("label-zoom").textContent = `${Math.round(state.zoom * 100)}%`;
+}
+
+// Drawing Logic
+function renderGrid() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let r = 0; r < state.rows; r++) {
+    for (let c = 0; c < state.cols; c++) {
+      const tile = state.grid[r][c];
+      const x = c * TILE_SIZE;
+      const y = r * TILE_SIZE;
+
+      if (tile) {
+        // Render block solid color backgrounds
+        ctx.fillStyle = tile.color || "#1e293b";
+        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+
+        // Highlight solid blocks with slight outer borders
+        if (tile.solid) {
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+          ctx.strokeRect(x + 1, y + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+        }
+
+        // Draw emojis
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `${TILE_SIZE * 0.55}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(tile.emoji || "", x + TILE_SIZE / 2, y + TILE_SIZE / 2);
+      } else {
+        // Draw checkered blank background colors
+        ctx.fillStyle = (r + c) % 2 === 0 ? "#111827" : "#0f172a";
+        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+      }
+
+      // Draw active coordinates selection outline rings
+      if (state.selectedCell && state.selectedCell.r === r && state.selectedCell.c === c) {
+        ctx.strokeStyle = "#a855f7"; // Magenta-Purple
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x + 1.5, y + 1.5, TILE_SIZE - 3, TILE_SIZE - 3);
+        ctx.lineWidth = 1;
+      }
+    }
+  }
+
+  // Draw Grid Lines if requested
+  if (state.gridlines) {
+    ctx.strokeStyle = "rgba(139, 92, 246, 0.15)"; // Soft purple line borders
+    ctx.beginPath();
+    for (let r = 0; r <= state.rows; r++) {
+      ctx.moveTo(0, r * TILE_SIZE);
+      ctx.lineTo(state.cols * TILE_SIZE, r * TILE_SIZE);
+    }
+    for (let c = 0; c <= state.cols; c++) {
+      ctx.moveTo(c * TILE_SIZE, 0);
+      ctx.lineTo(c * TILE_SIZE, state.rows * TILE_SIZE);
+    }
+    ctx.stroke();
+  }
+
+  // Recalculate total level coin goals
+  let totalCoins = 0;
+  for (let r = 0; r < state.rows; r++) {
+    for (let c = 0; c < state.cols; c++) {
+      const tile = state.grid[r][c];
+      if (tile && tile.category === "collectible" && tile.id === "coin") {
+        totalCoins++;
+      }
+    }
+  }
+  document.getElementById("label-coins").textContent = totalCoins;
+}
+
+// Map Editor interaction events
+let isDrawing = false;
+let isPanning = false;
+let lastMouseX = 0;
+let lastMouseY = 0;
+
+function setupEventListeners() {
+  // Zoom & Pan Actions
+  container.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const zoomIntensity = 0.08;
+    if (e.deltaY < 0) {
+      state.zoom = Math.min(2.5, state.zoom + zoomIntensity);
+    } else {
+      state.zoom = Math.max(0.4, state.zoom - zoomIntensity);
+    }
+    applyCanvasTransform();
+  });
+
+  // Drag pan if shift key or mouse middle button
+  container.addEventListener("mousedown", (e) => {
+    if (e.shiftKey || e.button === 1 || state.currentTool === "pan") {
+      isPanning = true;
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+      container.style.cursor = "grabbing";
+      e.preventDefault();
+      return;
+    }
+
+    // Grid coordinates extraction
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / state.zoom;
+    const y = (e.clientY - rect.top) / state.zoom;
+
+    const col = Math.floor(x / TILE_SIZE);
+    const row = Math.floor(y / TILE_SIZE);
+
+    if (col >= 0 && col < state.cols && row >= 0 && row < state.rows) {
+      isDrawing = true;
+      handleCanvasClickOrDrag(row, col, e.button === 2); // true if right click
+    }
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    // Coordinate HUD tracking
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / state.zoom;
+    const y = (e.clientY - rect.top) / state.zoom;
+    const col = Math.floor(x / TILE_SIZE);
+    const row = Math.floor(y / TILE_SIZE);
+
+    if (col >= 0 && col < state.cols && row >= 0 && row < state.rows) {
+      document.getElementById("label-cursor").textContent = `${col}, ${row}`;
+    }
+
+    if (isPanning) {
+      const dx = e.clientX - lastMouseX;
+      const dy = e.clientY - lastMouseY;
+      state.panX += dx;
+      state.panY += dy;
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+      applyCanvasTransform();
+      return;
+    }
+
+    if (isDrawing && col >= 0 && col < state.cols && row >= 0 && row < state.rows) {
+      handleCanvasClickOrDrag(row, col, e.buttons === 2);
+    }
+  });
+
+  window.addEventListener("mouseup", () => {
+    isDrawing = false;
+    isPanning = false;
+    container.style.cursor = "crosshair";
+  });
+
+  // Stop default Right Click menu inside canvas
+  canvas.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+  });
+
+  // Toolbar state selection hooks
+  document.getElementById("tool-brush").addEventListener("click", () => setTool("brush"));
+  document.getElementById("tool-eraser").addEventListener("click", () => setTool("eraser"));
+  document.getElementById("tool-bucket").addEventListener("click", () => setTool("bucket"));
+  document.getElementById("tool-select").addEventListener("click", () => setTool("select"));
+
+  // Canvas zoom/pan controls
+  document.getElementById("btn-zoom-in").addEventListener("click", () => {
+    state.zoom = Math.min(2.5, state.zoom + 0.15);
+    applyCanvasTransform();
+  });
+  document.getElementById("btn-zoom-out").addEventListener("click", () => {
+    state.zoom = Math.max(0.4, state.zoom - 0.15);
+    applyCanvasTransform();
+  });
+  document.getElementById("btn-zoom-reset").addEventListener("click", () => {
+    state.zoom = 1.0;
+    state.panX = 0;
+    state.panY = 0;
+    applyCanvasTransform();
+  });
+  document.getElementById("btn-toggle-grid").addEventListener("click", (e) => {
+    state.gridlines = !state.gridlines;
+    e.currentTarget.classList.toggle("bg-gray-800");
+    e.currentTarget.classList.toggle("bg-purple-900/50");
+    renderGrid();
+  });
+  document.getElementById("btn-clear-grid").addEventListener("click", () => {
+    if (confirm("Reset current map layout to clear state?")) {
+      resetGridToEmpty();
+      renderGrid();
+    }
+  });
+
+  // Sidebar changes callback
+  document.getElementById("prop-tile-name").addEventListener("input", (e) => {
+    let block = getInspectedBlock();
+    if (block) {
+      block.name = e.target.value;
+      buildPalettes();
+      renderGrid();
+      saveToLocalStorage();
+    }
+  });
+  document.getElementById("prop-tile-color").addEventListener("input", (e) => {
+    let block = getInspectedBlock();
+    if (block) {
+      block.color = e.target.value;
+      document.getElementById("prop-tile-color-lbl").textContent = e.target.value.toUpperCase();
+      buildPalettes();
+      renderGrid();
+      saveToLocalStorage();
+    }
+  });
+  document.getElementById("prop-tile-emoji").addEventListener("input", (e) => {
+    let block = getInspectedBlock();
+    if (block) {
+      block.emoji = e.target.value;
+      buildPalettes();
+      renderGrid();
+      saveToLocalStorage();
+    }
+  });
+  document.getElementById("prop-tile-solid").addEventListener("change", (e) => {
+    let block = getInspectedBlock();
+    if (block) {
+      block.solid = e.target.checked;
+      renderGrid();
+      saveToLocalStorage();
+    }
+  });
+  document.getElementById("prop-tile-damage").addEventListener("input", (e) => {
+    let block = getInspectedBlock();
+    if (block) {
+      block.damage = Number(e.target.value);
+      saveToLocalStorage();
+    }
+  });
+  document.getElementById("prop-tile-score").addEventListener("input", (e) => {
+    let block = getInspectedBlock();
+    if (block) {
+      block.score = Number(e.target.value);
+      saveToLocalStorage();
+    }
+  });
+  document.getElementById("prop-tile-js").addEventListener("input", (e) => {
+    let block = getInspectedBlock();
+    if (block) {
+      block.js = e.target.value;
+      saveToLocalStorage();
+    }
+  });
+
+  // Adding Script Action node Row inside Inspect Block Scripts tab
+  document.getElementById("btn-add-script-row").addEventListener("click", () => {
+    let block = getInspectedBlock();
+    if (block) {
+      if (!block.scripts) block.scripts = [];
+      block.scripts.push({
+        event: "collide",
+        action: "play_sound",
+        params: { type: "coin" }
+      });
+      updateSelectionPanel();
+      saveToLocalStorage();
+    }
+  });
+
+  // Right Panel tab toggle selectors
+  document.getElementById("tab-properties").addEventListener("click", () => {
+    toggleRightPanelTab("properties");
+  });
+  document.getElementById("tab-logic").addEventListener("click", () => {
+    toggleRightPanelTab("logic");
+  });
+
+  // Global Level configs
+  document.getElementById("input-grid-cols").addEventListener("change", (e) => {
+    state.cols = Math.max(10, Math.min(100, Number(e.target.value)));
+    adjustGridDimensions();
+    resizeCanvas();
+    renderGrid();
+    saveToLocalStorage();
+  });
+  document.getElementById("input-grid-rows").addEventListener("change", (e) => {
+    state.rows = Math.max(10, Math.min(100, Number(e.target.value)));
+    adjustGridDimensions();
+    resizeCanvas();
+    renderGrid();
+    saveToLocalStorage();
+  });
+  document.getElementById("input-gravity").addEventListener("input", (e) => {
+    state.gravity = Number(e.target.value);
+    document.getElementById("label-gravity").textContent = state.gravity;
+    saveToLocalStorage();
+  });
+  document.getElementById("input-speed").addEventListener("input", (e) => {
+    state.speed = Number(e.target.value);
+    document.getElementById("label-speed").textContent = state.speed;
+    saveToLocalStorage();
+  });
+  document.getElementById("select-lives").addEventListener("change", (e) => {
+    state.lives = Number(e.target.value);
+    saveToLocalStorage();
+  });
+  document.getElementById("select-genre").addEventListener("change", (e) => {
+    state.genre = e.target.value;
+    saveToLocalStorage();
+  });
+
+  // Custom Block Builder Modal Actions
+  document.getElementById("btn-add-custom-block").addEventListener("click", () => {
+    document.getElementById("modal-custom-block").classList.remove("opacity-0", "pointer-events-none");
+  });
+  document.getElementById("btn-modal-close").addEventListener("click", () => {
+    closeCustomBlockModal();
+  });
+  document.getElementById("btn-modal-cancel").addEventListener("click", () => {
+    closeCustomBlockModal();
+  });
+  document.getElementById("modal-block-color").addEventListener("input", (e) => {
+    document.getElementById("modal-block-color-lbl").textContent = e.target.value.toUpperCase();
+  });
+  document.getElementById("btn-modal-save").addEventListener("click", () => {
+    const rawId = document.getElementById("modal-block-id").value.trim().toLowerCase().replace(/\s+/g, "_");
+    const name = document.getElementById("modal-block-name").value.trim();
+    const emoji = document.getElementById("modal-block-emoji").value.trim() || "🧱";
+    const color = document.getElementById("modal-block-color").value;
+    const cat = document.querySelector('input[name="modal-category"]:checked').value;
+
+    if (!rawId || !name) {
+      alert("Please provide a valid block ID and Name.");
+      return;
+    }
+
+    if (DEFAULT_BLOCKS[rawId] || state.customBlocks[rawId]) {
+      alert("A block type with this ID already exists!");
+      return;
+    }
+
+    // Build brand new custom definition block
+    state.customBlocks[rawId] = {
+      id: rawId,
+      name: name,
+      category: cat,
+      color: color,
+      emoji: emoji,
+      solid: cat === "solid",
+      damage: cat === "hazard" ? 25 : 0,
+      score: cat === "collectible" ? 1 : 0,
+      scripts: []
+    };
+
+    saveToLocalStorage();
+    buildPalettes();
+    closeCustomBlockModal();
+  });
+
+  // Level file import-export triggers
+  document.getElementById("btn-export").addEventListener("click", () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+      cols: state.cols,
+      rows: state.rows,
+      grid: state.grid,
+      customBlocks: state.customBlocks,
+      gravity: state.gravity,
+      speed: state.speed,
+      lives: state.lives,
+      genre: state.genre
+    }, null, 2));
+    const dlAnchorElem = document.createElement('a');
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", `blocks_level_${state.genre}.json`);
+    dlAnchorElem.click();
+  });
+
+  document.getElementById("btn-import").addEventListener("click", () => {
+    document.getElementById("import-file-input").click();
+  });
+  document.getElementById("import-file-input").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        state.cols = parsed.cols || 30;
+        state.rows = parsed.rows || 16;
+        state.customBlocks = parsed.customBlocks || {};
+        state.gravity = parsed.gravity !== undefined ? parsed.gravity : 0.5;
+        state.speed = parsed.speed !== undefined ? parsed.speed : 4.0;
+        state.lives = parsed.lives || 3;
+        state.genre = parsed.genre || "platformer";
+        state.grid = parsed.grid || [];
+
+        adjustGridDimensions();
+        syncFormControls();
+        buildPalettes();
+        resizeCanvas();
+        renderGrid();
+        saveToLocalStorage();
+        alert("Level JSON imported successfully!");
+      } catch (err) {
+        alert("Invalid level config format file. Ensure it is correct JSON.");
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // Template dropdown load listener
+  document.getElementById("select-template").addEventListener("change", (e) => {
+    loadTemplate(e.target.value);
+  });
+
+  // Watch for system resizing
+  window.addEventListener("resize", () => {
+    resizeCanvas();
+    renderGrid();
+  });
+}
+
+// Built-in Level templates pre-configs
+const TEMPLATES = {
+  platformer_demo: {
+    cols: 30,
+    rows: 16,
+    genre: "platformer",
+    gravity: 0.5,
+    speed: 4.5,
+    lives: 3,
+    customBlocks: {},
+    grid_init: (grid) => {
+      const g = getBlockById;
+      // Draw ground at the bottom
+      for (let c = 0; c < 30; c++) {
+        grid[15][c] = g("ground");
+        if (c < 10 || c > 18) {
+          grid[14][c] = g("ground");
+        }
+      }
+
+      // Spawn Player on left
+      grid[13][2] = g("player_spawn");
+
+      // Place lava gap in middle ground
+      for (let c = 10; c <= 18; c++) {
+        grid[15][c] = g("lava");
+      }
+
+      // Some higher brick blocks and floating platforms
+      grid[11][6] = g("brick");
+      grid[11][7] = g("brick");
+      grid[11][8] = g("brick");
+
+      grid[11][13] = g("brick");
+      grid[11][14] = g("brick");
+      grid[11][15] = g("brick");
+
+      // Place bouncy mushroom pad near right ledge to jump high
+      grid[13][20] = g("bouncy_pad");
+
+      // Some floating stone ledges
+      grid[7][23] = g("stone");
+      grid[7][24] = g("stone");
+      grid[7][25] = g("stone");
+
+      // Spikes trap
+      grid[13][12] = g("spikes");
+
+      // Gold Coins to collect
+      grid[10][7] = g("coin");
+      grid[10][14] = g("coin");
+      grid[13][25] = g("coin");
+      grid[13][26] = g("coin");
+      grid[6][24] = g("gem");
+
+      // Patrol Goblin enemies walking on ledges
+      grid[10][13] = g("patrol_enemy");
+
+      // Exit goal portal locked behind a keyed locked door block
+      grid[13][28] = g("portal");
+      grid[13][27] = g("locked_door");
+
+      // Gold Key hidden on the high left ledge
+      grid[6][7] = g("key");
+      grid[7][7] = g("stone");
+    }
+  },
+
+  maze_demo: {
+    cols: 30,
+    rows: 16,
+    genre: "topdown",
+    gravity: 0,
+    speed: 4,
+    lives: 3,
+    customBlocks: {},
+    grid_init: (grid) => {
+      const g = getBlockById;
+      // Build border outer walls
+      for (let r = 0; r < 16; r++) {
+        for (let c = 0; c < 30; c++) {
+          if (r === 0 || r === 15 || c === 0 || c === 29) {
+            grid[r][c] = g("brick");
+          }
+        }
+      }
+
+      // Maze corridors walls
+      for (let r = 2; r < 14; r += 2) {
+        for (let c = 2; c < 28; c++) {
+          if (c % 4 !== 0) {
+            grid[r][c] = g("brick");
+          }
+        }
+      }
+
+      // Open a few pass-through pathways
+      grid[4][12] = null;
+      grid[8][8] = null;
+      grid[10][20] = null;
+      grid[6][16] = null;
+
+      // Spawns
+      grid[1][1] = g("player_spawn");
+
+      // Coins scattered
+      grid[1][15] = g("coin");
+      grid[5][5] = g("coin");
+      grid[5][25] = g("coin");
+      grid[9][3] = g("coin");
+      grid[9][15] = g("gem");
+      grid[13][13] = g("coin");
+
+      // Danger lava spikes
+      grid[7][15] = g("lava");
+      grid[11][5] = g("spikes");
+
+      // Goblin Patrols in corridors
+      grid[3][10] = g("patrol_enemy");
+      grid[7][22] = g("patrol_enemy");
+
+      // Key, locked door and Portal exit goal
+      grid[13][28] = g("portal");
+      grid[13][27] = g("locked_door");
+      grid[1][28] = g("key");
+    }
+  },
+
+  logic_demo: {
+    cols: 30,
+    rows: 16,
+    genre: "platformer",
+    gravity: 0.5,
+    speed: 4,
+    lives: 3,
+    customBlocks: {},
+    grid_init: (grid) => {
+      const g = getBlockById;
+
+      // Ground floor
+      for (let c = 0; c < 30; c++) {
+        grid[15][c] = g("ground");
+      }
+
+      // Spawns
+      grid[14][2] = g("player_spawn");
+
+      // Create a Custom JS active block that boosts the player upwards when touched
+      const customSling = JSON.parse(JSON.stringify(g("stone")));
+      customSling.id = "custom_js_sling";
+      customSling.name = "Hyper Slinger Pad";
+      customSling.color = "#ec4899";
+      customSling.emoji = "🛸";
+      customSling.solid = true;
+      customSling.js = `player.vy = -18; // hyper launch force\nsound.play('jump');\ngame.addCoins(5);`;
+
+      grid[14][10] = customSling;
+
+      // High coins above custom launcher block
+      grid[5][10] = g("gem");
+      grid[6][10] = g("coin");
+      grid[7][10] = g("coin");
+
+      // Exit goal portal
+      grid[14][28] = g("portal");
+    }
+  }
+};
+
+function loadTemplate(templateId) {
+  const tmpl = TEMPLATES[templateId];
+  if (!tmpl) return;
+
+  state.cols = tmpl.cols;
+  state.rows = tmpl.rows;
+  state.genre = tmpl.genre;
+  state.gravity = tmpl.gravity;
+  state.speed = tmpl.speed;
+  state.lives = tmpl.lives;
+  state.customBlocks = JSON.parse(JSON.stringify(tmpl.customBlocks));
+
+  // Build grid
+  state.grid = [];
+  for (let r = 0; r < state.rows; r++) {
+    state.grid.push(new Array(state.cols).fill(null));
+  }
+
+  // Populate blocks
+  tmpl.grid_init(state.grid);
+
+  // Sync editor controls
+  syncFormControls();
+  buildPalettes();
+  resizeCanvas();
+  renderGrid();
+  saveToLocalStorage();
+}
+
+function closeCustomBlockModal() {
+  document.getElementById("modal-custom-block").classList.add("opacity-0", "pointer-events-none");
+  // reset inputs
+  document.getElementById("modal-block-id").value = "";
+  document.getElementById("modal-block-name").value = "";
+  document.getElementById("modal-block-emoji").value = "";
+}
+
+function toggleRightPanelTab(tabName) {
+  const tabProp = document.getElementById("tab-properties");
+  const tabLogic = document.getElementById("tab-logic");
+  const contentProp = document.getElementById("content-properties");
+  const contentLogic = document.getElementById("content-logic");
+
+  if (tabName === "properties") {
+    tabProp.className = "flex-1 py-2 text-center text-xs font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
+    tabLogic.className = "flex-1 py-2 text-center text-xs font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none";
+    contentProp.classList.remove("hidden");
+    contentLogic.classList.add("hidden");
+  } else {
+    tabLogic.className = "flex-1 py-2 text-center text-xs font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
+    tabProp.className = "flex-1 py-2 text-center text-xs font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none";
+    contentLogic.classList.remove("hidden");
+    contentProp.classList.add("hidden");
+  }
+}
+
+// Tool switching handler
+function setTool(tool) {
+  state.currentTool = tool;
+
+  const btnBrush = document.getElementById("tool-brush");
+  const btnEraser = document.getElementById("tool-eraser");
+  const btnBucket = document.getElementById("tool-bucket");
+  const btnSelect = document.getElementById("tool-select");
+
+  [btnBrush, btnEraser, btnBucket, btnSelect].forEach(btn => {
+    btn.classList.remove("bg-purple-600", "text-white");
+    btn.classList.add("bg-gray-800", "text-gray-400");
+  });
+
+  let activeBtn = btnBrush;
+  if (tool === "eraser") activeBtn = btnEraser;
+  if (tool === "bucket") activeBtn = btnBucket;
+  if (tool === "select") activeBtn = btnSelect;
+
+  activeBtn.classList.add("bg-purple-600", "text-white");
+  activeBtn.classList.remove("bg-gray-800", "text-gray-400");
+
+  document.getElementById("active-tool-display").textContent = tool.charAt(0).toUpperCase() + tool.slice(1);
+}
+
+// Handle Paint Brush & Eraser Drag Drawing Click events
+function handleCanvasClickOrDrag(row, col, isRightClick) {
+  // If right click, act as ERASER regardless of current tool selection
+  const activeTool = isRightClick ? "eraser" : state.currentTool;
+
+  if (activeTool === "brush") {
+    const palBlock = getBlockById(state.activeBlockId);
+    if (palBlock) {
+      // Create a unique clone copy of palette block definition to support unique logic scripting per tile instance
+      state.grid[row][col] = JSON.parse(JSON.stringify(palBlock));
+    }
+  } else if (activeTool === "eraser") {
+    state.grid[row][col] = null;
+    if (state.selectedCell && state.selectedCell.r === row && state.selectedCell.c === col) {
+      state.selectedCell = null;
+      updateSelectionPanel();
+    }
+  } else if (activeTool === "bucket") {
+    floodFill(row, col);
+  } else if (activeTool === "select") {
+    state.selectedCell = { r: row, c: col };
+    state.inspectingPaletteId = null;
+    updateSelectionPanel();
+  }
+
+  renderGrid();
+  saveToLocalStorage();
+}
+
+// Visual bucket tool: flood fill grid cells
+function floodFill(startR, startC) {
+  const targetBlock = state.grid[startR][startC];
+  const targetId = targetBlock ? targetBlock.id : null;
+  const fillBlock = getBlockById(state.activeBlockId);
+
+  // Avoid infinite loops
+  if (targetId === fillBlock.id) return;
+
+  const queue = [[startR, startC]];
+  const visited = new Set();
+
+  while (queue.length > 0) {
+    const [r, c] = queue.shift();
+    const key = `${r},${c}`;
+
+    if (visited.has(key)) continue;
+    visited.add(key);
+
+    const currentBlock = state.grid[r][c];
+    const currentId = currentBlock ? currentBlock.id : null;
+
+    if (currentId === targetId) {
+      state.grid[r][c] = JSON.parse(JSON.stringify(fillBlock));
+
+      // Check neighbors
+      const neighbors = [
+        [r - 1, c],
+        [r + 1, c],
+        [r, c - 1],
+        [r, c + 1]
+      ];
+
+      for (const [nr, nc] of neighbors) {
+        if (nr >= 0 && nr < state.rows && nc >= 0 && nc < state.cols) {
+          queue.push([nr, nc]);
+        }
+      }
+    }
+  }
+}
+
+// Run init on window load
+window.addEventListener("DOMContentLoaded", initEditor);
