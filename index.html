@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blocks: Retro Game Maker & IDE</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Custom CSS for custom scrolls and style tweaks -->
+  <style>
+    /* Dark Theme Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1f2937;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #4b5563;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6b7280;
+    }
+    .custom-canvas {
+      image-rendering: pixelated;
+    }
+    /* Simple Animation */
+    @keyframes pulse-soft {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .pulse-playing {
+      animation: pulse-soft 2s infinite;
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col overflow-hidden selection:bg-purple-600 selection:text-white">
+
+  <!-- TOP HEADER PANEL -->
+  <header class="bg-gray-900 border-b border-gray-800 px-4 py-2 flex items-center justify-between z-10">
+    <div class="flex items-center space-x-3">
+      <div class="bg-gradient-to-tr from-purple-600 to-indigo-600 text-white p-2 rounded-lg flex items-center justify-center shadow-lg shadow-purple-900/30">
+        <i class="fas fa-cubes text-xl"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg tracking-wide bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">BLOCKS</h1>
+        <p class="text-[10px] text-gray-400 font-mono">Retro Game IDE v1.0</p>
+      </div>
+    </div>
+
+    <!-- Middle Controls: Play / Edit Mode & Game Mode Selector -->
+    <div class="flex items-center space-x-4 bg-gray-950/50 p-1 rounded-lg border border-gray-800">
+      <div class="flex items-center space-x-1">
+        <button id="btn-edit-mode" class="px-3 py-1.5 rounded text-xs font-semibold flex items-center space-x-1.5 transition bg-purple-600 text-white shadow">
+          <i class="fas fa-edit"></i>
+          <span>Design Mode</span>
+        </button>
+        <button id="btn-play-mode" class="px-3 py-1.5 rounded text-xs font-semibold flex items-center space-x-1.5 transition text-gray-400 hover:text-white">
+          <i class="fas fa-play"></i>
+          <span>Play Mode</span>
+        </button>
+      </div>
+
+      <div class="h-5 w-[1px] bg-gray-800"></div>
+
+      <div class="flex items-center space-x-2">
+        <label for="select-genre" class="text-xs text-gray-400 font-mono">Genre:</label>
+        <select id="select-genre" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-purple-300 font-semibold focus:outline-none focus:border-purple-500">
+          <option value="platformer">Platformer (Gravity)</option>
+          <option value="topdown">Top-Down (RPG/Maze)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Right Controls: Save/Load, Import/Export, and Template selector -->
+    <div class="flex items-center space-x-3">
+      <!-- Template Dropdown -->
+      <div class="flex items-center space-x-1">
+        <i class="fas fa-folder-open text-gray-400 text-xs"></i>
+        <select id="select-template" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-purple-500">
+          <option value="" disabled selected>Load Template...</option>
+          <option value="platformer_demo">Platformer Demo</option>
+          <option value="maze_demo">Maze Raider Demo</option>
+          <option value="logic_demo">Logic & Scripting Sandbox</option>
+        </select>
+      </div>
+
+      <!-- Divider -->
+      <div class="h-5 w-[1px] bg-gray-800"></div>
+
+      <!-- Action buttons -->
+      <button id="btn-import" class="p-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs text-gray-300 hover:text-white transition flex items-center space-x-1" title="Import Level JSON">
+        <i class="fas fa-file-import"></i>
+        <span class="hidden md:inline">Import</span>
+      </button>
+      <input type="file" id="import-file-input" class="hidden" accept=".json" />
+
+      <button id="btn-export" class="p-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs text-gray-300 hover:text-white transition flex items-center space-x-1" title="Export Level JSON">
+        <i class="fas fa-file-export"></i>
+        <span class="hidden md:inline">Export JSON</span>
+      </button>
+
+      <button id="btn-publish" class="p-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded text-xs font-bold transition flex items-center space-x-1.5 shadow" title="Export Standalone Webpage for GitHub Pages">
+        <i class="fab fa-github"></i>
+        <span>Build Pages Dist</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 flex overflow-hidden">
+
+    <!-- LEFT PANEL: TILE PALETTE & DRAWING TOOLS -->
+    <section class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden">
+      <!-- Toolbox Header -->
+      <div class="p-3 border-b border-gray-800 bg-gray-900/50 flex items-center justify-between">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center space-x-1.5">
+          <i class="fas fa-tools text-purple-400"></i>
+          <span>Drawing Tools</span>
+        </h2>
+        <!-- Tool Status -->
+        <span id="active-tool-display" class="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded font-mono border border-purple-800">Brush</span>
+      </div>
+
+      <!-- Action Tools -->
+      <div class="p-3 grid grid-cols-4 gap-2 border-b border-gray-800">
+        <button id="tool-brush" class="p-2 bg-purple-600 text-white rounded flex flex-col items-center justify-center hover:bg-purple-500 transition active-tool" title="Paint Block">
+          <i class="fas fa-paint-brush text-sm"></i>
+          <span class="text-[8px] mt-1 font-mono">Paint</span>
+        </button>
+        <button id="tool-eraser" class="p-2 bg-gray-800 text-gray-400 rounded flex flex-col items-center justify-center hover:bg-gray-700 hover:text-white transition" title="Erase Block">
+          <i class="fas fa-eraser text-sm"></i>
+          <span class="text-[8px] mt-1 font-mono">Erase</span>
+        </button>
+        <button id="tool-bucket" class="p-2 bg-gray-800 text-gray-400 rounded flex flex-col items-center justify-center hover:bg-gray-700 hover:text-white transition" title="Fill Area">
+          <i class="fas fa-fill-drip text-sm"></i>
+          <span class="text-[8px] mt-1 font-mono">Fill</span>
+        </button>
+        <button id="tool-select" class="p-2 bg-gray-800 text-gray-400 rounded flex flex-col items-center justify-center hover:bg-gray-700 hover:text-white transition" title="Select & Inspect Block Code">
+          <i class="fas fa-mouse-pointer text-sm"></i>
+          <span class="text-[8px] mt-1 font-mono">Inspect</span>
+        </button>
+      </div>
+
+      <!-- Palette Categories -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-4">
+        <!-- Solids / Platforms -->
+        <div>
+          <h3 class="text-[10px] uppercase font-bold text-gray-500 mb-2 font-mono">Solids & Obstacles</h3>
+          <div class="grid grid-cols-2 gap-2" id="palette-solids">
+            <!-- Dynamic Tiles populated by blocks.js -->
+          </div>
+        </div>
+
+        <!-- Hazards -->
+        <div>
+          <h3 class="text-[10px] uppercase font-bold text-gray-500 mb-2 font-mono">Hazards & Traps</h3>
+          <div class="grid grid-cols-2 gap-2" id="palette-hazards">
+            <!-- Dynamic Tiles -->
+          </div>
+        </div>
+
+        <!-- Collectibles & Interactives -->
+        <div>
+          <h3 class="text-[10px] uppercase font-bold text-gray-500 mb-2 font-mono">Interactives</h3>
+          <div class="grid grid-cols-2 gap-2" id="palette-interactives">
+            <!-- Dynamic Tiles -->
+          </div>
+        </div>
+
+        <!-- Entities & Characters -->
+        <div>
+          <h3 class="text-[10px] uppercase font-bold text-gray-500 mb-2 font-mono">Characters & Actors</h3>
+          <div class="grid grid-cols-2 gap-2" id="palette-actors">
+            <!-- Dynamic Tiles -->
+          </div>
+        </div>
+
+        <!-- Custom Blocks Builder -->
+        <div class="pt-2 border-t border-gray-800">
+          <h3 class="text-[10px] uppercase font-bold text-purple-400 mb-2 font-mono flex items-center justify-between">
+            <span>Custom Blocks</span>
+            <button id="btn-add-custom-block" class="text-xs text-purple-400 hover:text-purple-300" title="Create a new block type">
+              <i class="fas fa-plus-circle"></i>
+            </button>
+          </h3>
+          <div class="grid grid-cols-2 gap-2" id="palette-custom">
+            <!-- Dynamic custom blocks -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Tips -->
+      <div class="p-3 bg-gray-950 border-t border-gray-800 text-[11px] text-gray-400 font-mono space-y-1">
+        <div><span class="text-purple-400">L-Click:</span> Paint/Select</div>
+        <div><span class="text-purple-400">R-Click:</span> Erase block</div>
+        <div><span class="text-purple-400">Shift + Drag:</span> Pan Canvas</div>
+        <div><span class="text-purple-400">Wheel:</span> Zoom Canvas</div>
+      </div>
+    </section>
+
+    <!-- CENTER PANEL: INTERACTIVE CANVAS GRID -->
+    <section class="flex-1 bg-gray-950 flex flex-col overflow-hidden relative">
+      <!-- Grid Settings Toolbar -->
+      <div class="bg-gray-900/60 border-b border-gray-800 px-4 py-2 flex items-center justify-between">
+        <div class="flex items-center space-x-3 text-xs font-mono text-gray-400">
+          <!-- Coordinates & Stats -->
+          <div class="flex items-center space-x-1">
+            <i class="fas fa-compress text-gray-500"></i>
+            <span>Zoom:</span>
+            <span id="label-zoom" class="text-gray-200">100%</span>
+          </div>
+          <div class="h-4 w-[1px] bg-gray-800"></div>
+          <div class="flex items-center space-x-1">
+            <i class="fas fa-crosshairs text-gray-500"></i>
+            <span>Cursor:</span>
+            <span id="label-cursor" class="text-gray-200">0, 0</span>
+          </div>
+          <div class="h-4 w-[1px] bg-gray-800"></div>
+          <div class="flex items-center space-x-1">
+            <i class="fas fa-coins text-yellow-500"></i>
+            <span>Level Coins:</span>
+            <span id="label-coins" class="text-yellow-400 font-bold">0</span>
+          </div>
+        </div>
+
+        <!-- Canvas controls: Zoom-in, Zoom-out, Reset zoom, Gridlines toggle -->
+        <div class="flex items-center space-x-2">
+          <button id="btn-zoom-out" class="p-1.5 hover:bg-gray-800 rounded text-gray-400 hover:text-white" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+          <button id="btn-zoom-reset" class="px-2 py-0.5 text-xs bg-gray-800 hover:bg-gray-700 rounded text-gray-300" title="Reset Zoom">100%</button>
+          <button id="btn-zoom-in" class="p-1.5 hover:bg-gray-800 rounded text-gray-400 hover:text-white" title="Zoom In"><i class="fas fa-search-plus"></i></button>
+          <div class="h-4 w-[1px] bg-gray-800"></div>
+          <button id="btn-toggle-grid" class="p-1.5 bg-gray-800 text-purple-400 hover:bg-gray-700 rounded" title="Toggle Gridlines"><i class="fas fa-th"></i></button>
+          <button id="btn-clear-grid" class="p-1.5 hover:bg-red-950 hover:text-red-400 rounded text-gray-400" title="Reset / Clear Grid"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+
+      <!-- Scrollable Canvas Workspace Wrapper -->
+      <div id="canvas-container" class="flex-1 overflow-hidden relative flex items-center justify-center cursor-crosshair">
+        <!-- Interactive Game & Level Canvas -->
+        <canvas id="game-canvas" class="custom-canvas bg-gray-900 border border-purple-900/40 shadow-2xl transition-all duration-75"></canvas>
+
+        <!-- Welcome Overlay when starting blank -->
+        <div id="editor-overlay-msg" class="absolute pointer-events-none inset-0 flex flex-col items-center justify-center bg-gray-950/40 backdrop-blur-xs opacity-0 transition duration-300">
+          <div class="bg-gray-900/90 border border-gray-800 p-6 rounded-xl text-center max-w-sm space-y-3 shadow-2xl">
+            <i class="fas fa-gamepad text-4xl text-purple-500 pulse-playing"></i>
+            <h3 class="text-base font-bold">Select a Template to Begin</h3>
+            <p class="text-xs text-gray-400 leading-relaxed">Or start painting tiles! Change values in the Right Panel to custom-program events and rules.</p>
+          </div>
+        </div>
+
+        <!-- Level Complete Win banner -->
+        <div id="game-win-banner" class="absolute hidden inset-0 bg-black/75 flex flex-col items-center justify-center z-20 space-y-4">
+          <h2 class="text-3xl md:text-5xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-emerald-400 to-teal-400 drop-shadow-lg">VICTORY!</h2>
+          <p class="text-sm font-mono text-gray-300">Level Cleared successfully!</p>
+          <div class="flex space-x-3">
+            <button id="btn-win-replay" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg text-sm transition">Play Again</button>
+            <button id="btn-win-edit" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-lg text-sm transition">Back to Editor</button>
+          </div>
+        </div>
+
+        <!-- Game Over Loss banner -->
+        <div id="game-over-banner" class="absolute hidden inset-0 bg-black/75 flex flex-col items-center justify-center z-20 space-y-4">
+          <h2 class="text-3xl md:text-5xl font-extrabold tracking-widest text-red-500 drop-shadow-lg">GAME OVER</h2>
+          <p id="game-over-reason" class="text-sm font-mono text-gray-300">You touched hazard lava!</p>
+          <div class="flex space-x-3">
+            <button id="btn-fail-retry" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm transition">Retry Level</button>
+            <button id="btn-fail-edit" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-lg text-sm transition">Back to Editor</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Playmode GUI Hud Info -->
+      <div id="game-hud" class="absolute bottom-4 left-4 bg-gray-900/95 border border-purple-500/30 p-3 rounded-lg flex items-center space-x-6 text-sm font-mono shadow-2xl z-10 pointer-events-none transition duration-200 opacity-0 transform translate-y-2">
+        <div class="flex items-center space-x-2">
+          <i class="fas fa-heart text-red-500"></i>
+          <span class="text-gray-400">Health:</span>
+          <span id="hud-health" class="text-red-400 font-bold">100%</span>
+        </div>
+        <div class="h-4 w-[1px] bg-gray-800"></div>
+        <div class="flex items-center space-x-2">
+          <i class="fas fa-star text-yellow-400"></i>
+          <span class="text-gray-400">Coins:</span>
+          <span id="hud-coins" class="text-yellow-400 font-bold">0</span>
+        </div>
+        <div class="h-4 w-[1px] bg-gray-800"></div>
+        <div class="flex items-center space-x-2">
+          <i class="fas fa-key text-blue-400"></i>
+          <span class="text-gray-400">Keys:</span>
+          <span id="hud-keys" class="text-blue-400 font-bold">0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: DEVELOPER PANEL & LOGIC BLOCKS BUILDER -->
+    <section class="w-80 bg-gray-900 border-l border-gray-800 flex flex-col overflow-hidden">
+      <!-- Right Panel Header Tabs -->
+      <div class="flex border-b border-gray-800 bg-gray-950">
+        <button id="tab-properties" class="flex-1 py-2 text-center text-xs font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none">
+          <i class="fas fa-sliders-h mr-1.5"></i>Properties
+        </button>
+        <button id="tab-logic" class="flex-1 py-2 text-center text-xs font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none">
+          <i class="fas fa-network-wired mr-1.5"></i>Block Scripts
+        </button>
+      </div>
+
+      <!-- Panel Body Container -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-5">
+
+        <!-- TAB Content: Properties Manager -->
+        <div id="content-properties" class="space-y-4">
+          <!-- Selection info -->
+          <div class="bg-gray-950 p-3 border border-gray-800 rounded-lg">
+            <h3 class="text-[10px] uppercase font-bold text-gray-500 mb-2 font-mono">Currently Selected</h3>
+            <div id="property-no-selection" class="text-xs text-gray-400 italic">No block selected. Click a block on the left palette or in the grid with inspect mode.</div>
+
+            <div id="property-selected-info" class="hidden flex items-center space-x-3">
+              <div id="selected-block-preview" class="w-12 h-12 rounded bg-purple-950 border border-purple-700/50 flex items-center justify-center text-2xl">
+                🧱
+              </div>
+              <div class="flex-1 min-w-0">
+                <h4 id="selected-block-name" class="font-bold text-sm text-white truncate">Ground Block</h4>
+                <p id="selected-block-type" class="text-[10px] text-purple-400 font-mono font-bold">Solid Tile</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modifiable Block Settings -->
+          <div id="property-inputs" class="hidden space-y-3">
+            <h4 class="text-xs font-bold text-gray-300">Tile Configurations</h4>
+
+            <!-- Change Name -->
+            <div class="space-y-1">
+              <label class="text-[10px] uppercase text-gray-500 font-mono block">Label / Name</label>
+              <input type="text" id="prop-tile-name" class="w-full bg-gray-950 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500" />
+            </div>
+
+            <!-- Block Visual Customization -->
+            <div class="grid grid-cols-2 gap-2">
+              <div class="space-y-1">
+                <label class="text-[10px] uppercase text-gray-500 font-mono block">Color</label>
+                <div class="flex items-center space-x-1.5 bg-gray-950 border border-gray-700 rounded p-1">
+                  <input type="color" id="prop-tile-color" class="w-6 h-6 border-0 bg-transparent rounded cursor-pointer" />
+                  <span id="prop-tile-color-lbl" class="text-[10px] font-mono text-gray-400">#4F46E5</span>
+                </div>
+              </div>
+              <div class="space-y-1">
+                <label class="text-[10px] uppercase text-gray-500 font-mono block">Emoji Display</label>
+                <input type="text" id="prop-tile-emoji" class="w-full bg-gray-950 border border-gray-700 rounded px-2 py-1 text-xs text-center text-white focus:outline-none focus:border-purple-500" placeholder="e.g. 👾" />
+              </div>
+            </div>
+
+            <!-- Custom Attributes per block -->
+            <div class="pt-2 border-t border-gray-800 space-y-3">
+              <h5 class="text-[10px] uppercase text-gray-400 font-bold font-mono">Behavior Rules</h5>
+
+              <!-- Solid Checkbox -->
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-300">Is Solid Obstacle</span>
+                <input type="checkbox" id="prop-tile-solid" class="accent-purple-600 cursor-pointer h-4 w-4" />
+              </div>
+
+              <!-- Damage / Lava power -->
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-300">Damage Player on Touch</span>
+                <input type="number" id="prop-tile-damage" class="w-16 bg-gray-950 border border-gray-700 rounded px-1.5 py-0.5 text-xs text-center text-red-400" min="0" max="100" />
+              </div>
+
+              <!-- Collectible Points -->
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-300">Score / Coin Value</span>
+                <input type="number" id="prop-tile-score" class="w-16 bg-gray-950 border border-gray-700 rounded px-1.5 py-0.5 text-xs text-center text-yellow-400" min="0" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB Content: Visual Logic Block Builder (Scripts) -->
+        <div id="content-logic" class="hidden space-y-4">
+          <div class="bg-gray-950 p-3 border border-gray-800 rounded-lg">
+            <h3 class="text-xs font-bold text-gray-300 mb-1">Visual Block Scripting</h3>
+            <p class="text-[10px] text-gray-400 leading-relaxed font-mono">Hook events to instant actions on collision or tick triggers.</p>
+          </div>
+
+          <div id="logic-no-selection" class="text-xs text-gray-400 italic">No block selected to script. Select a block to configure its visual triggers.</div>
+
+          <!-- The Visual Blocks Configurator -->
+          <div id="logic-builder-panel" class="hidden space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-purple-400 font-mono">Script Triggers</span>
+              <button id="btn-add-script-row" class="text-xs bg-purple-900/50 hover:bg-purple-800 border border-purple-700 px-2 py-1 rounded text-purple-200 flex items-center space-x-1">
+                <i class="fas fa-plus-circle"></i>
+                <span>Add Event</span>
+              </button>
+            </div>
+
+            <!-- List of Script Event-Action Rules -->
+            <div id="script-rows-container" class="space-y-3">
+              <!-- Visual Scripting Rows are injected here -->
+            </div>
+
+            <!-- Interactive JS Console Trigger -->
+            <div class="pt-3 border-t border-gray-800 space-y-2">
+              <h4 class="text-xs font-bold text-gray-300 flex items-center justify-between">
+                <span>Custom Javascript</span>
+                <span class="text-[9px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded font-mono">Optional</span>
+              </h4>
+              <p class="text-[10px] text-gray-400 font-mono">Write JS to run when this tile is triggered! Available objects: <code class="text-indigo-300">player</code>, <code class="text-indigo-300">tile</code>, <code class="text-indigo-300">game</code>, <code class="text-indigo-300">sound</code>.</p>
+              <textarea id="prop-tile-js" rows="5" class="w-full bg-gray-950 border border-gray-700 rounded p-2 text-xs text-green-400 font-mono focus:outline-none focus:border-purple-500" placeholder="// e.g.
+player.vy = -12; // super bounce
+sound.play('coin');
+game.addCoins(5);"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM BAR: LEVEL EXPORTS -->
+      <div class="p-3 bg-gray-950 border-t border-gray-800 space-y-2">
+        <h4 class="text-[10px] uppercase font-bold text-gray-500 font-mono">Single-File GitHub Web Bundle</h4>
+        <p class="text-[10px] text-gray-400">Generate a completely standalone self-playing page that loads instantly when committed to your repository.</p>
+        <button id="btn-publish-bottom" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-2 rounded text-xs transition flex items-center justify-center space-x-1.5 shadow">
+          <i class="fas fa-rocket"></i>
+          <span>Build Standalone Playable (.html)</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- BOTTOM CONFIG: GLOBAL PHYSICS, METRICS, SOUND TEST -->
+  <footer class="bg-gray-900 border-t border-gray-800 p-4 flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0 z-10">
+    <div class="flex flex-wrap gap-4 items-center">
+      <!-- Grid Dimensions -->
+      <div class="flex items-center space-x-2 bg-gray-950 border border-gray-800 rounded px-2.5 py-1">
+        <span class="text-xs font-mono text-gray-400">Grid Size:</span>
+        <div class="flex items-center space-x-1">
+          <input type="number" id="input-grid-cols" class="w-10 bg-transparent text-center text-xs font-bold text-white focus:outline-none" value="30" min="10" max="100" />
+          <span class="text-gray-500">x</span>
+          <input type="number" id="input-grid-rows" class="w-10 bg-transparent text-center text-xs font-bold text-white focus:outline-none" value="16" min="10" max="100" />
+        </div>
+      </div>
+
+      <!-- Physics variables (Platformer vs Top Down depends on it) -->
+      <div class="flex items-center space-x-2 bg-gray-950 border border-gray-800 rounded px-2.5 py-1">
+        <span class="text-xs font-mono text-gray-400"><i class="fas fa-meteor text-indigo-400 mr-1"></i>Gravity:</span>
+        <input type="range" id="input-gravity" min="0" max="2" step="0.1" value="0.5" class="w-16 accent-purple-600 cursor-pointer" />
+        <span id="label-gravity" class="text-xs font-mono text-indigo-300 w-6">0.5</span>
+      </div>
+
+      <div class="flex items-center space-x-2 bg-gray-950 border border-gray-800 rounded px-2.5 py-1">
+        <span class="text-xs font-mono text-gray-400"><i class="fas fa-running text-teal-400 mr-1"></i>Speed:</span>
+        <input type="range" id="input-speed" min="1" max="10" step="0.5" value="4" class="w-16 accent-purple-600 cursor-pointer" />
+        <span id="label-speed" class="text-xs font-mono text-teal-300 w-6">4</span>
+      </div>
+
+      <!-- Lives count -->
+      <div class="flex items-center space-x-2 bg-gray-950 border border-gray-800 rounded px-2.5 py-1">
+        <span class="text-xs font-mono text-gray-400"><i class="fas fa-heart text-red-500 mr-1"></i>Starting Lives:</span>
+        <select id="select-lives" class="bg-transparent text-xs text-white font-bold focus:outline-none">
+          <option value="1">1 Life</option>
+          <option value="3" selected>3 Lives</option>
+          <option value="5">5 Lives</option>
+          <option value="99">Infinite</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Retro Sound Engine test panel -->
+    <div class="flex items-center space-x-3 bg-gray-950/40 p-1 px-3 border border-gray-800 rounded-lg">
+      <span class="text-[10px] font-mono uppercase text-gray-500 flex items-center space-x-1">
+        <i class="fas fa-volume-up text-purple-400"></i>
+        <span>Sound SFX Test:</span>
+      </span>
+      <div class="flex items-center space-x-1">
+        <button id="btn-sound-jump" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 rounded text-[10px] font-mono text-gray-300">Jump</button>
+        <button id="btn-sound-coin" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 rounded text-[10px] font-mono text-gray-300">Coin</button>
+        <button id="btn-sound-hit" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 rounded text-[10px] font-mono text-gray-300">Hit</button>
+        <button id="btn-sound-win" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 rounded text-[10px] font-mono text-gray-300">Victory</button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL: Custom Block Builder -->
+  <div id="modal-custom-block" class="fixed inset-0 bg-black/85 flex items-center justify-center z-50 opacity-0 pointer-events-none transition duration-200">
+    <div class="bg-gray-900 border border-purple-900 rounded-xl p-5 max-w-sm w-full mx-4 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-base text-white flex items-center space-x-2">
+          <i class="fas fa-magic text-purple-400"></i>
+          <span>Create Custom Block Type</span>
+        </h3>
+        <button id="btn-modal-close" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="space-y-1">
+          <label class="text-[10px] uppercase text-gray-400 font-mono block">Unique ID (lowercase, no spaces)</label>
+          <input type="text" id="modal-block-id" class="w-full bg-gray-950 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="e.g. fire_flower" />
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-[10px] uppercase text-gray-400 font-mono block">Block Label / Name</label>
+          <input type="text" id="modal-block-name" class="w-full bg-gray-950 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="e.g. Fire Flower" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="text-[10px] uppercase text-gray-400 font-mono block">Emoji</label>
+            <input type="text" id="modal-block-emoji" class="w-full bg-gray-950 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-center text-white focus:outline-none focus:border-purple-500" placeholder="🌸" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-[10px] uppercase text-gray-400 font-mono block">Palette Color</label>
+            <div class="flex items-center space-x-2 bg-gray-950 border border-gray-700 rounded p-1">
+              <input type="color" id="modal-block-color" class="w-6 h-6 border-0 bg-transparent rounded cursor-pointer" value="#ec4899" />
+              <span id="modal-block-color-lbl" class="text-[10px] font-mono text-gray-400">#EC4899</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-2">
+          <label class="text-[10px] uppercase text-gray-400 font-mono block">Behavior Category</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center space-x-2 bg-gray-950 hover:bg-gray-800 p-2 border border-gray-800 rounded cursor-pointer text-xs">
+              <input type="radio" name="modal-category" value="solid" checked class="accent-purple-600" />
+              <span>Solid block</span>
+            </label>
+            <label class="flex items-center space-x-2 bg-gray-950 hover:bg-gray-800 p-2 border border-gray-800 rounded cursor-pointer text-xs">
+              <input type="radio" name="modal-category" value="collectible" class="accent-purple-600" />
+              <span>Collectible</span>
+            </label>
+            <label class="flex items-center space-x-2 bg-gray-950 hover:bg-gray-800 p-2 border border-gray-800 rounded cursor-pointer text-xs">
+              <input type="radio" name="modal-category" value="hazard" class="accent-purple-600" />
+              <span>Hazard trap</span>
+            </label>
+            <label class="flex items-center space-x-2 bg-gray-950 hover:bg-gray-800 p-2 border border-gray-800 rounded cursor-pointer text-xs">
+              <input type="radio" name="modal-category" value="actor" class="accent-purple-600" />
+              <span>Active Actor</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-2">
+        <button id="btn-modal-cancel" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-xs text-gray-300 rounded-lg transition">Cancel</button>
+        <button id="btn-modal-save" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-lg transition shadow">Create Block</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOAD THE SCRIPTS IN CORRECT SEQUENCE -->
+  <script src="js/blocks.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/exporter.js"></script>
+</body>
+</html>
