@@ -378,6 +378,15 @@
                 <span class="text-xs text-gray-300">Score / Coin Value</span>
                 <input type="number" id="prop-tile-score" class="w-16 bg-gray-950 border border-gray-700 rounded px-1.5 py-0.5 text-xs text-center text-yellow-400" min="0" />
               </div>
+
+              <!-- Set to Default Button & Message -->
+              <div class="pt-3 border-t border-gray-800 space-y-2">
+                <button id="btn-prop-reset" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 rounded px-3 py-2 text-xs font-semibold flex items-center justify-center space-x-1.5 transition" title="Reset properties of the selected block to defaults">
+                  <i class="fas fa-undo"></i>
+                  <span>Set to Default</span>
+                </button>
+                <div id="reset-status-msg" class="text-[10px] text-center font-mono transition duration-300 min-h-[16px]"></div>
+              </div>
             </div>
           </div>
         </div>
