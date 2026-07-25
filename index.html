@@ -300,11 +300,14 @@
     <section class="w-80 bg-gray-900 border-l border-gray-800 flex flex-col overflow-hidden">
       <!-- Right Panel Header Tabs -->
       <div class="flex border-b border-gray-800 bg-gray-950">
-        <button id="tab-properties" class="flex-1 py-2 text-center text-xs font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none">
-          <i class="fas fa-sliders-h mr-1.5"></i>Properties
+        <button id="tab-properties" class="flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none">
+          <i class="fas fa-sliders-h mr-1"></i>Properties
         </button>
-        <button id="tab-logic" class="flex-1 py-2 text-center text-xs font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none">
-          <i class="fas fa-network-wired mr-1.5"></i>Block Scripts
+        <button id="tab-logic" class="flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none">
+          <i class="fas fa-network-wired mr-1"></i>Scripts
+        </button>
+        <button id="tab-ai-copilot" class="flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none" title="AI Assistant Copilot">
+          <i class="fas fa-robot mr-1 text-purple-400"></i>AI Copilot
         </button>
       </div>
 
@@ -414,6 +417,56 @@
 player.vy = -12; // super bounce
 sound.play('coin');
 game.addCoins(5);"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB Content: AI Copilot Assistant -->
+        <div id="content-ai-copilot" class="hidden space-y-4">
+          <div class="bg-purple-950/40 p-3 border border-purple-900/50 rounded-lg">
+            <h3 class="text-xs font-bold text-purple-300 mb-1 flex items-center space-x-1.5">
+              <i class="fas fa-brain"></i>
+              <span>AI Agent Copilot</span>
+            </h3>
+            <p class="text-[10px] text-purple-200/80 leading-relaxed font-mono">Use procedural heuristics AI to build custom scripts or construct whole level structures!</p>
+          </div>
+
+          <!-- Generation prompt input -->
+          <div class="space-y-1.5">
+            <label class="text-[10px] uppercase font-bold text-gray-500 font-mono block">Describe what to generate</label>
+            <textarea id="ai-prompt-input" rows="3" class="w-full bg-gray-950 border border-gray-700 rounded p-2 text-xs text-purple-100 placeholder-gray-600 font-mono focus:outline-none focus:border-purple-500" placeholder="e.g. 'speed pad', 'gravity flip script', 'spooky castle level', or 'spiral maze'"></textarea>
+          </div>
+
+          <!-- Quick Prompts / Prompt Tags -->
+          <div class="space-y-1">
+            <label class="text-[9px] uppercase font-bold text-gray-500 font-mono block">Quick Prompt Suggestions</label>
+            <div class="flex flex-wrap gap-1.5">
+              <button class="ai-suggestion-btn text-[9px] bg-gray-950 hover:bg-gray-850 text-purple-300 border border-gray-800 rounded px-2 py-0.5 transition" data-prompt="speed pad script">⚡ Speed Pad JS</button>
+              <button class="ai-suggestion-btn text-[9px] bg-gray-950 hover:bg-gray-850 text-purple-300 border border-gray-800 rounded px-2 py-0.5 transition" data-prompt="gravity flip script">🪐 Gravity Flip JS</button>
+              <button class="ai-suggestion-btn text-[9px] bg-gray-950 hover:bg-gray-850 text-purple-300 border border-gray-800 rounded px-2 py-0.5 transition" data-prompt="trampoline bounce script">🍄 Trampoline JS</button>
+              <button class="ai-suggestion-btn text-[9px] bg-gray-950 hover:bg-gray-850 text-purple-300 border border-gray-800 rounded px-2 py-0.5 transition" data-prompt="generate spiral maze">🌀 Spiral Maze</button>
+              <button class="ai-suggestion-btn text-[9px] bg-gray-950 hover:bg-gray-850 text-purple-300 border border-gray-800 rounded px-2 py-0.5 transition" data-prompt="generate castle of doom">🏰 Castle of Doom</button>
+              <button class="ai-suggestion-btn text-[9px] bg-gray-950 hover:bg-gray-850 text-purple-300 border border-gray-800 rounded px-2 py-0.5 transition" data-prompt="generate floating sky level">☁️ Sky Floating Ledges</button>
+            </div>
+          </div>
+
+          <!-- Generator Buttons -->
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button id="btn-ai-gen-script" class="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-bold py-2 px-1.5 rounded text-[10px] transition flex items-center justify-center space-x-1 shadow">
+              <i class="fas fa-code"></i>
+              <span>Generate JS Block</span>
+            </button>
+            <button id="btn-ai-gen-level" class="bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-bold py-2 px-1.5 rounded text-[10px] transition flex items-center justify-center space-x-1 shadow">
+              <i class="fas fa-map"></i>
+              <span>Generate Level</span>
+            </button>
+          </div>
+
+          <!-- AI Logger Status Console -->
+          <div class="space-y-1">
+            <label class="text-[9px] uppercase font-bold text-gray-500 font-mono block">AI Copilot Output Logs</label>
+            <div id="ai-console-log" class="bg-gray-950 border border-gray-800 rounded p-2 text-[10px] font-mono text-emerald-400 min-h-[80px] max-h-[120px] overflow-y-auto leading-relaxed">
+              &gt; AI Copilot status online.<br>Ready to receive commands...
             </div>
           </div>
         </div>

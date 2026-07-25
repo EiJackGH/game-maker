@@ -181,6 +181,20 @@ const DEFAULT_BLOCKS = {
       { event: "collide", action: "bounce_player", params: { strength: 12 } },
       { event: "collide", action: "play_sound", params: { type: "jump" } }
     ]
+  },
+  ai_agent: {
+    id: "ai_agent",
+    name: "AI Agent Bot",
+    category: "actor",
+    color: "#8b5cf6", // Purple
+    emoji: "🤖",
+    solid: false,
+    damage: 15,
+    score: 0,
+    scripts: [
+      { event: "collide", action: "harm_player", params: { amount: 15 } },
+      { event: "collide", action: "play_sound", params: { type: "hit" } }
+    ]
   }
 };
 

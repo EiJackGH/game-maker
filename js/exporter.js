@@ -286,25 +286,122 @@ function generateStandaloneBundle() {
           this.damagePlayer(100, "Fell out of bounds!");
         }
 
-        // Enemies patrol
+        // Enemies patrol & chase AI Agent
         this.enemies.forEach(enemy => {
-          enemy.x += enemy.vx;
-          const c = Math.floor((enemy.x + (enemy.vx > 0 ? enemy.w : 0)) / TILE_SIZE);
-          const r = Math.floor(enemy.y / TILE_SIZE);
-          if (c < 0 || c >= state.cols) enemy.vx *= -1;
-          else {
-            const nextTile = state.grid[r][c];
-            if (nextTile && nextTile.solid) enemy.vx *= -1;
+          if (enemy.id === "ai_agent") {
+            const targetX = this.player.x;
+            const targetY = this.player.y;
+            const speed = 1.2;
+
+            if (state.genre === "platformer") {
+              if (enemy.x < targetX - 4) enemy.vx = speed;
+              else if (enemy.x > targetX + 4) enemy.vx = -speed;
+              else enemy.vx = 0;
+
+              if (!enemy.vy) enemy.vy = 0;
+              enemy.vy += state.gravity;
+              enemy.x += enemy.vx;
+
+              let cCheck = Math.floor((enemy.x + (enemy.vx > 0 ? enemy.w : 0)) / TILE_SIZE);
+              let rCheck = Math.floor((enemy.y + enemy.h - 4) / TILE_SIZE);
+              let blockedAhead = false;
+
+              if (cCheck >= 0 && cCheck < state.cols && rCheck >= 0 && rCheck < state.rows) {
+                const nextTile = state.grid[rCheck][cCheck];
+                if (nextTile && nextTile.solid) {
+                  blockedAhead = true;
+                  if (enemy.vx > 0) enemy.x = cCheck * TILE_SIZE - enemy.w;
+                  else if (enemy.vx < 0) enemy.x = cCheck * TILE_SIZE + TILE_SIZE;
+                  enemy.vx = 0;
+                }
+              }
+
+              enemy.y += enemy.vy;
+              let rCheckBottom = Math.floor((enemy.y + enemy.h) / TILE_SIZE);
+              let cCheckBottomLeft = Math.floor(enemy.x / TILE_SIZE);
+              let cCheckBottomRight = Math.floor((enemy.x + enemy.w) / TILE_SIZE);
+              let enemyGrounded = false;
+
+              for (let col of [cCheckBottomLeft, cCheckBottomRight]) {
+                if (col >= 0 && col < state.cols && rCheckBottom >= 0 && rCheckBottom < state.rows) {
+                  const tile = state.grid[rCheckBottom][col];
+                  if (tile && tile.solid) {
+                    enemy.y = rCheckBottom * TILE_SIZE - enemy.h;
+                    enemy.vy = 0;
+                    enemyGrounded = true;
+                  }
+                }
+              }
+
+              if (enemyGrounded && (blockedAhead || (targetY < enemy.y - TILE_SIZE && Math.random() < 0.1))) {
+                enemy.vy = -8.0;
+                enemyGrounded = false;
+              }
+            } else {
+              const dx = targetX - enemy.x;
+              const dy = targetY - enemy.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+
+              if (dist > 4) {
+                enemy.vx = (dx / dist) * speed;
+                enemy.vy = (dy / dist) * speed;
+              } else {
+                enemy.vx = 0; enemy.vy = 0;
+              }
+
+              enemy.x += enemy.vx;
+              let minCol = Math.max(0, Math.floor(enemy.x / TILE_SIZE));
+              let maxCol = Math.min(state.cols - 1, Math.floor((enemy.x + enemy.w) / TILE_SIZE));
+              let minRow = Math.max(0, Math.floor(enemy.y / TILE_SIZE));
+              let maxRow = Math.min(state.rows - 1, Math.floor((enemy.y + enemy.h) / TILE_SIZE));
+
+              for (let r = minRow; r <= maxRow; r++) {
+                for (let c = minCol; c <= maxCol; c++) {
+                  const tile = state.grid[r][c];
+                  if (tile && tile.solid) {
+                    if (enemy.vx > 0) enemy.x = c * TILE_SIZE - enemy.w;
+                    else if (enemy.vx < 0) enemy.x = c * TILE_SIZE + TILE_SIZE;
+                    enemy.vx = 0;
+                  }
+                }
+              }
+
+              enemy.y += enemy.vy;
+              minCol = Math.max(0, Math.floor(enemy.x / TILE_SIZE));
+              maxCol = Math.min(state.cols - 1, Math.floor((enemy.x + enemy.w) / TILE_SIZE));
+              minRow = Math.max(0, Math.floor(enemy.y / TILE_SIZE));
+              maxRow = Math.min(state.rows - 1, Math.floor((enemy.y + enemy.h) / TILE_SIZE));
+
+              for (let r = minRow; r <= maxRow; r++) {
+                for (let c = minCol; c <= maxCol; c++) {
+                  const tile = state.grid[r][c];
+                  if (tile && tile.solid) {
+                    if (enemy.vy > 0) enemy.y = r * TILE_SIZE - enemy.h;
+                    else if (enemy.vy < 0) enemy.y = r * TILE_SIZE + TILE_SIZE;
+                    enemy.vy = 0;
+                  }
+                }
+              }
+            }
+          } else {
+            enemy.x += enemy.vx;
+            const c = Math.floor((enemy.x + (enemy.vx > 0 ? enemy.w : 0)) / TILE_SIZE);
+            const r = Math.floor(enemy.y / TILE_SIZE);
+            if (c < 0 || c >= state.cols) enemy.vx *= -1;
+            else {
+              const nextTile = state.grid[r][c];
+              if (nextTile && nextTile.solid) enemy.vx *= -1;
+            }
           }
 
           if (this.player.x < enemy.x + enemy.w && this.player.x + this.player.w > enemy.x &&
               this.player.y < enemy.y + enemy.h && this.player.y + this.player.h > enemy.y) {
-            if (enemy.scripts) {
+            if (enemy.scripts && enemy.scripts.length > 0) {
               enemy.scripts.forEach(script => {
                 if (script.event === "collide") this.runScriptAction(script.action, script.params, enemy.originR, enemy.originC);
               });
             } else {
-              this.damagePlayer(enemy.damage || 10, "Touched a goblin!");
+              this.damagePlayer(enemy.damage || 10, "Touched an enemy!");
             }
           }
         });

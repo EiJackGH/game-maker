@@ -698,6 +698,9 @@ function setupEventListeners() {
   document.getElementById("tab-logic").addEventListener("click", () => {
     toggleRightPanelTab("logic");
   });
+  document.getElementById("tab-ai-copilot").addEventListener("click", () => {
+    toggleRightPanelTab("ai-copilot");
+  });
 
   // Global Level configs
   document.getElementById("input-grid-cols").addEventListener("change", (e) => {
@@ -831,6 +834,33 @@ function setupEventListeners() {
       }
     };
     reader.readAsText(file);
+  });
+
+  // AI Copilot Actions
+  document.getElementById("btn-ai-gen-script").addEventListener("click", () => {
+    const prompt = document.getElementById("ai-prompt-input").value;
+    if (!prompt.trim()) {
+      aiLog("Please write a description/prompt first!", "error");
+      return;
+    }
+    generateAiScript(prompt);
+  });
+
+  document.getElementById("btn-ai-gen-level").addEventListener("click", () => {
+    const prompt = document.getElementById("ai-prompt-input").value;
+    if (!prompt.trim()) {
+      aiLog("Please write a description/prompt first!", "error");
+      return;
+    }
+    generateAiLevel(prompt);
+  });
+
+  document.querySelectorAll(".ai-suggestion-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const p = btn.getAttribute("data-prompt");
+      document.getElementById("ai-prompt-input").value = p;
+      aiLog(`Selected prompt: "${p}"`);
+    });
   });
 
   // Template dropdown load listener
@@ -1054,20 +1084,288 @@ function closeCustomBlockModal() {
 function toggleRightPanelTab(tabName) {
   const tabProp = document.getElementById("tab-properties");
   const tabLogic = document.getElementById("tab-logic");
+  const tabAi = document.getElementById("tab-ai-copilot");
   const contentProp = document.getElementById("content-properties");
   const contentLogic = document.getElementById("content-logic");
+  const contentAi = document.getElementById("content-ai-copilot");
+
+  // Reset styles
+  [tabProp, tabLogic, tabAi].forEach(t => {
+    t.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none";
+  });
+  [contentProp, contentLogic, contentAi].forEach(c => c.classList.add("hidden"));
 
   if (tabName === "properties") {
-    tabProp.className = "flex-1 py-2 text-center text-xs font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
-    tabLogic.className = "flex-1 py-2 text-center text-xs font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none";
+    tabProp.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
     contentProp.classList.remove("hidden");
-    contentLogic.classList.add("hidden");
-  } else {
-    tabLogic.className = "flex-1 py-2 text-center text-xs font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
-    tabProp.className = "flex-1 py-2 text-center text-xs font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none";
+  } else if (tabName === "logic") {
+    tabLogic.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
     contentLogic.classList.remove("hidden");
-    contentProp.classList.add("hidden");
+  } else if (tabName === "ai-copilot") {
+    tabAi.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
+    contentAi.classList.remove("hidden");
   }
+}
+
+// Helper to print in the AI console log
+function aiLog(msg, type = "info") {
+  const consoleLog = document.getElementById("ai-console-log");
+  if (!consoleLog) return;
+  const colorClass = type === "error" ? "text-red-400" : type === "success" ? "text-emerald-300" : "text-purple-300";
+  consoleLog.innerHTML += `<br><span class="${colorClass}">&gt; ${msg}</span>`;
+  consoleLog.scrollTop = consoleLog.scrollHeight;
+}
+
+// Procedural client-side heuristics AI generation parsers
+function generateAiScript(prompt) {
+  prompt = prompt.toLowerCase().trim();
+  aiLog(`Analyzing prompt for script generation: "${prompt}"...`);
+
+  let scriptJs = "";
+  let name = "AI Generated Block";
+  let color = "#a855f7";
+  let emoji = "⚙️";
+
+  if (prompt.includes("speed") || prompt.includes("velocity") || prompt.includes("dash")) {
+    name = "AI Speed Boost";
+    color = "#3b82f6";
+    emoji = "⚡";
+    scriptJs = `// AI Speed booster block
+player.vx = (player.facing === 'left') ? -state.speed * 2.5 : state.speed * 2.5;
+sound.play('coin');
+aiLog('Speed Boost Triggered!');`;
+  } else if (prompt.includes("gravity") || prompt.includes("flip") || prompt.includes("invert")) {
+    name = "AI Gravity Inverter";
+    color = "#f43f5e";
+    emoji = "🪐";
+    scriptJs = `// AI Gravity Flipper script
+if (typeof state.originalGravity === 'undefined') {
+  state.originalGravity = state.gravity;
+}
+state.gravity = -state.gravity;
+sound.play('jump');
+aiLog('Gravity flipped to: ' + state.gravity);`;
+  } else if (prompt.includes("trampoline") || prompt.includes("bounce") || prompt.includes("spring")) {
+    name = "AI Trampoline";
+    color = "#eab308";
+    emoji = "🍄";
+    scriptJs = `// AI Trampoline super bouncer
+player.vy = -16;
+sound.play('jump');
+aiLog('Super bounce jump executed!');`;
+  } else if (prompt.includes("teleport") || prompt.includes("portal") || prompt.includes("warp")) {
+    name = "AI Teleporter";
+    color = "#10b981";
+    emoji = "🌀";
+    scriptJs = `// AI Teleporter script
+const colTarget = Math.floor(Math.random() * state.cols);
+const rowTarget = Math.floor(Math.random() * (state.rows - 2));
+player.x = colTarget * 32;
+player.y = rowTarget * 32;
+sound.play('win');
+aiLog('Warped player to coordinates: ' + colTarget + ', ' + rowTarget);`;
+  } else if (prompt.includes("heal") || prompt.includes("health") || prompt.includes("life")) {
+    name = "AI Recovery Core";
+    color = "#22c55e";
+    emoji = "💖";
+    scriptJs = `// AI Health restorer
+game.health = Math.min(100, game.health + 50);
+sound.play('coin');
+aiLog('Restored 50% Health!');`;
+  } else if (prompt.includes("coin") || prompt.includes("score") || prompt.includes("points")) {
+    name = "AI Lucky block";
+    color = "#fbbf24";
+    emoji = "🪙";
+    scriptJs = `// AI Lucky bonus point block
+game.addCoins(10);
+sound.play('coin');
+aiLog('+10 Gold coins received!');`;
+  } else {
+    // Generates a random fun effect script
+    name = "AI Randomizer";
+    color = "#a855f7";
+    emoji = "🎲";
+    scriptJs = `// Random AI Block Actions
+const choices = [
+  () => { player.vy = -12; sound.play('jump'); },
+  () => { game.addCoins(3); sound.play('coin'); },
+  () => { game.health = Math.max(10, game.health - 20); sound.play('hit'); }
+];
+choices[Math.floor(Math.random() * choices.length)]();`;
+  }
+
+  aiLog(`Synthesizing new Custom Block "${name}"...`, "success");
+
+  // Generate unique ID
+  const rawId = "ai_" + Math.random().toString(36).substring(2, 9);
+
+  // Create and inject custom block
+  state.customBlocks[rawId] = {
+    id: rawId,
+    name: name,
+    category: "collectible",
+    color: color,
+    emoji: emoji,
+    solid: false,
+    damage: 0,
+    score: 0,
+    scripts: [],
+    js: scriptJs
+  };
+
+  saveToLocalStorage();
+  buildPalettes();
+
+  // Highlight and select this block automatically
+  state.activeBlockId = rawId;
+  state.selectedCell = null;
+  state.inspectingPaletteId = rawId;
+  updateSelectionPanel();
+
+  aiLog(`Success! Custom Block "${name}" has been added to your palette and is ready to paint.`, "success");
+}
+
+function generateAiLevel(prompt) {
+  prompt = prompt.toLowerCase().trim();
+  aiLog(`Generating procedural layout for prompt: "${prompt}"...`);
+
+  // Clear current layout first
+  resetGridToEmpty();
+
+  const g = getBlockById;
+
+  if (prompt.includes("maze") || prompt.includes("spiral") || prompt.includes("labyrinth")) {
+    aiLog("Constructing procedural Top-Down labyrinth layout...");
+    state.genre = "topdown";
+    state.gravity = 0;
+    state.speed = 4;
+    syncFormControls();
+
+    // Fill borders with bricks
+    for (let r = 0; r < state.rows; r++) {
+      for (let c = 0; c < state.cols; c++) {
+        if (r === 0 || r === state.rows - 1 || c === 0 || c === state.cols - 1) {
+          state.grid[r][c] = g("brick");
+        } else if (r % 2 === 0 && c % 2 === 0 && Math.random() < 0.6) {
+          state.grid[r][c] = g("stone");
+        }
+      }
+    }
+
+    // Ensure player start spawn and key, locked door, portal placement
+    state.grid[1][1] = g("player_spawn");
+    state.grid[1][state.cols - 2] = g("key");
+    state.grid[state.rows - 2][state.cols - 2] = g("portal");
+    state.grid[state.rows - 2][state.cols - 3] = g("locked_door");
+
+    // Scatter some coins and AI Agents
+    for (let i = 0; i < 6; i++) {
+      const r = Math.floor(Math.random() * (state.rows - 2)) + 1;
+      const c = Math.floor(Math.random() * (state.cols - 2)) + 1;
+      if (!state.grid[r][c]) state.grid[r][c] = g("coin");
+    }
+    state.grid[state.rows - 2][1] = g("ai_agent");
+
+    aiLog("Labyrinth construction complete!", "success");
+
+  } else if (prompt.includes("castle") || prompt.includes("doom") || prompt.includes("dungeon") || prompt.includes("spooky")) {
+    aiLog("Constructing procedural Castle of Doom platformer...");
+    state.genre = "platformer";
+    state.gravity = 0.5;
+    state.speed = 4.5;
+    syncFormControls();
+
+    // Fill bottom ground
+    for (let c = 0; c < state.cols; c++) {
+      state.grid[state.rows - 1][c] = g("brick");
+    }
+
+    // Create castle rooms / ledges
+    for (let c = 4; c < state.cols - 4; c += 6) {
+      // Columns / pillars
+      for (let r = state.rows - 4; r < state.rows - 1; r++) {
+        state.grid[r][c] = g("brick");
+      }
+      // Floating bridge stones
+      state.grid[state.rows - 5][c + 1] = g("stone");
+      state.grid[state.rows - 5][c + 2] = g("stone");
+      state.grid[state.rows - 5][c + 3] = g("stone");
+    }
+
+    // Lava gaps
+    state.grid[state.rows - 1][10] = g("lava");
+    state.grid[state.rows - 1][11] = g("lava");
+    state.grid[state.rows - 1][18] = g("lava");
+    state.grid[state.rows - 1][19] = g("lava");
+
+    // Spawn player
+    state.grid[state.rows - 2][2] = g("player_spawn");
+
+    // Add Key, Locked door, Portal, AI Agents & Spikes
+    state.grid[state.rows - 6][15] = g("key");
+    state.grid[state.rows - 2][state.cols - 3] = g("locked_door");
+    state.grid[state.rows - 2][state.cols - 2] = g("portal");
+
+    // Spikes on bridges
+    state.grid[state.rows - 6][11] = g("spikes");
+    // Placing AI agent chases
+    state.grid[state.rows - 6][12] = g("ai_agent");
+    state.grid[state.rows - 2][state.cols - 5] = g("ai_agent");
+
+    aiLog("Castle of Doom successfully generated!", "success");
+
+  } else {
+    // Default: Floating Sky Ledges / Parkour
+    aiLog("Constructing floating sky ledges parkour platformer...");
+    state.genre = "platformer";
+    state.gravity = 0.55;
+    state.speed = 4;
+    syncFormControls();
+
+    // Safe starting platform
+    for (let c = 0; c < 5; c++) {
+      state.grid[state.rows - 2][c] = g("stone");
+    }
+    state.grid[state.rows - 3][2] = g("player_spawn");
+
+    // Create floating blocks with gaps
+    let currRow = state.rows - 3;
+    for (let c = 6; c < state.cols - 5; c += 4) {
+      currRow += (Math.random() < 0.5 ? -1 : 1);
+      currRow = Math.max(state.rows - 7, Math.min(state.rows - 2, currRow));
+
+      state.grid[currRow][c] = g("stone");
+      state.grid[currRow][c + 1] = g("stone");
+
+      // Place collectible gems or spring mushroom bouncy pads
+      if (Math.random() < 0.4) {
+        state.grid[currRow - 1][c] = g("gem");
+      } else if (Math.random() < 0.3) {
+        state.grid[currRow - 1][c] = g("bouncy_pad");
+      }
+    }
+
+    // Goal sky island on the far right
+    const rightCol = state.cols - 4;
+    for (let c = rightCol; c < state.cols; c++) {
+      state.grid[state.rows - 3][c] = g("stone");
+    }
+    state.grid[state.rows - 4][state.cols - 2] = g("portal");
+    state.grid[state.rows - 4][state.cols - 3] = g("locked_door");
+    state.grid[state.rows - 4][8] = g("key");
+
+    // Place an AI Agent Bot to chase the player across the sky!
+    state.grid[state.rows - 4][state.cols - 4] = g("ai_agent");
+
+    aiLog("Sky platformer level generated successfully!", "success");
+  }
+
+  saveToLocalStorage();
+  buildPalettes();
+  resizeCanvas();
+  renderGrid();
+
+  aiLog("Ready! Switch to Play Mode to test the procedural level.", "success");
 }
 
 // Tool switching handler
