@@ -35,6 +35,8 @@ const state = {
   redoStack: []
 };
 
+const ORIGINAL_DEFAULT_BLOCKS = JSON.parse(JSON.stringify(DEFAULT_BLOCKS));
+
 // Canvas element refs
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -626,6 +628,44 @@ function setupEventListeners() {
       renderGrid();
       saveToLocalStorage();
     }
+  });
+
+  // Set to Default Button logic
+  document.getElementById("btn-prop-reset").addEventListener("click", () => {
+    const block = getInspectedBlock();
+    const statusMsg = document.getElementById("reset-status-msg");
+    if (!block) return;
+
+    if (ORIGINAL_DEFAULT_BLOCKS[block.id]) {
+      const orig = ORIGINAL_DEFAULT_BLOCKS[block.id];
+      // Reset properties of this block instance
+      block.name = orig.name;
+      block.color = orig.color;
+      block.emoji = orig.emoji;
+      block.solid = orig.solid;
+      block.damage = orig.damage;
+      block.score = orig.score;
+      block.scripts = JSON.parse(JSON.stringify(orig.scripts || []));
+      block.js = orig.js || "";
+
+      // Rebuild palette, update selection details, redraw grid and persist state
+      buildPalettes();
+      updateSelectionPanel();
+      renderGrid();
+      saveToLocalStorage();
+
+      statusMsg.className = "text-[10px] text-center font-mono text-emerald-400 transition duration-300 min-h-[16px]";
+      statusMsg.textContent = "Properties reset to default!";
+    } else {
+      statusMsg.className = "text-[10px] text-center font-mono text-red-400 transition duration-300 min-h-[16px]";
+      statusMsg.textContent = "Custom blocks cannot be reset!";
+    }
+
+    // Auto-clear message after 3 seconds
+    if (window.resetMsgTimeout) clearTimeout(window.resetMsgTimeout);
+    window.resetMsgTimeout = setTimeout(() => {
+      statusMsg.textContent = "";
+    }, 3000);
   });
   document.getElementById("prop-tile-color").addEventListener("input", (e) => {
     let block = getInspectedBlock();
