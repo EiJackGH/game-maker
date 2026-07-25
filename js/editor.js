@@ -88,11 +88,11 @@ function loadFromLocalStorage() {
       adjustGridDimensions();
       syncFormControls();
     } else {
-      resetGridToEmpty();
+      loadTemplate("platformer_demo");
     }
   } catch (e) {
     console.error("Error loading local level data, starting fresh:", e);
-    resetGridToEmpty();
+    loadTemplate("platformer_demo");
   }
 }
 
@@ -1111,6 +1111,12 @@ function loadTemplate(templateId) {
   resizeCanvas();
   renderGrid();
   saveToLocalStorage();
+
+  // Synchronize the template dropdown selector in the UI
+  const selectTmpl = document.getElementById("select-template");
+  if (selectTmpl) {
+    selectTmpl.value = templateId;
+  }
 }
 
 function closeCustomBlockModal() {
