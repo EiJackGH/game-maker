@@ -585,6 +585,21 @@ const game = {
         userFunction(sandboxCtx.player, sandboxCtx.tile, sandboxCtx.game, sandboxCtx.sound);
       } catch (e) {
         console.error("Custom Javascript execution runtime crash:", e);
+        if (state && Array.isArray(state.runtimeErrors)) {
+          // Check if same error already reported
+          const alreadyExists = state.runtimeErrors.some(err => err.message === e.message && err.coordinate.r === r && err.coordinate.c === c);
+          if (!alreadyExists) {
+            state.runtimeErrors.push({
+              message: e.message,
+              coordinate: { r, c },
+              tileName: tile.name,
+              timestamp: Date.now()
+            });
+            if (typeof validateScriptsAndLevel === "function") {
+              validateScriptsAndLevel();
+            }
+          }
+        }
       }
     }
   },

@@ -477,7 +477,8 @@ function generateStandaloneBundle() {
             const userFunction = new Function("player", "tile", "game", "sound", tile.js);
             userFunction(sandboxCtx.player, sandboxCtx.tile, sandboxCtx.game, sandboxCtx.sound);
           } catch (e) {
-            console.error(e);
+            console.error("Custom Javascript execution runtime crash:", e);
+            alert("Runtime Script Crash on Tile [" + tile.name + "] at (" + c + ", " + r + "):\\n" + e.message);
           }
         }
       },

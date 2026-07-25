@@ -32,7 +32,10 @@ const state = {
 
   // History for Undo/Redo
   undoStack: [],
-  redoStack: []
+  redoStack: [],
+
+  // Captured runtime exceptions/errors
+  runtimeErrors: []
 };
 
 const ORIGINAL_DEFAULT_BLOCKS = JSON.parse(JSON.stringify(DEFAULT_BLOCKS));
@@ -53,6 +56,9 @@ function initEditor() {
   resizeCanvas();
   renderGrid();
   updateSelectionPanel();
+  if (typeof validateScriptsAndLevel === "function") {
+    validateScriptsAndLevel();
+  }
 }
 
 // Save & Load to/from LocalStorage
@@ -68,6 +74,9 @@ function saveToLocalStorage() {
     genre: state.genre
   };
   localStorage.setItem("blocks_game_maker_data", JSON.stringify(data));
+  if (typeof validateScriptsAndLevel === "function") {
+    validateScriptsAndLevel();
+  }
 }
 
 function loadFromLocalStorage() {
@@ -117,6 +126,9 @@ function resetGridToEmpty() {
     state.grid.push(row);
   }
   saveToLocalStorage();
+  if (typeof validateScriptsAndLevel === "function") {
+    validateScriptsAndLevel();
+  }
 }
 
 function adjustGridDimensions() {
@@ -151,6 +163,9 @@ function getBlockById(id) {
 
 // Build Drawing Palette Categories
 function buildPalettes() {
+  if (typeof validateScriptsAndLevel === "function") {
+    validateScriptsAndLevel();
+  }
   const solidsDiv = document.getElementById("palette-solids");
   const hazardsDiv = document.getElementById("palette-hazards");
   const interactivesDiv = document.getElementById("palette-interactives");
@@ -410,6 +425,261 @@ function getInspectedBlock() {
   return null;
 }
 
+// Global exposure for UI elements
+window.navigateToCoordinate = function(r, c) {
+  state.selectedCell = { r: Number(r), c: Number(c) };
+  state.inspectingPaletteId = null;
+  setTool("select");
+  updateSelectionPanel();
+  renderGrid();
+};
+
+window.navigateToPaletteBlock = function(id) {
+  state.selectedCell = null;
+  state.inspectingPaletteId = id;
+  setTool("select");
+  updateSelectionPanel();
+  renderGrid();
+
+  // highlight block button inside palettes
+  document.querySelectorAll(".palette-item").forEach(item => {
+    item.classList.remove("border-purple-500", "ring-2", "ring-purple-500/30");
+    item.classList.add("border-gray-700");
+    if (item.getAttribute("data-id") === id) {
+      item.classList.add("border-purple-500", "ring-2", "ring-purple-500/30");
+      item.classList.remove("border-gray-700");
+    }
+  });
+};
+
+// Real-time Static Analysis & Level Validation Engine
+function validateScriptsAndLevel() {
+  const problems = [];
+
+  let playerSpawnsCount = 0;
+  let portalsCount = 0;
+  let hasLockedDoors = false;
+  let hasKeys = false;
+  let hasSolids = false;
+
+  // Scan grid for blocks and state-level problems
+  for (let r = 0; r < state.rows; r++) {
+    for (let c = 0; c < state.cols; c++) {
+      const tile = state.grid[r][c];
+      if (tile) {
+        if (tile.id === "player_spawn") {
+          playerSpawnsCount++;
+        }
+        if (tile.id === "portal") {
+          portalsCount++;
+        }
+        if (tile.id === "locked_door") {
+          hasLockedDoors = true;
+        }
+        if (tile.id === "key") {
+          hasKeys = true;
+        }
+        if (tile.solid) {
+          hasSolids = true;
+        }
+
+        // 1. Check custom JS syntax for grid tiles
+        if (tile.js && tile.js.trim().length > 0) {
+          try {
+            new Function("player", "tile", "game", "sound", tile.js);
+          } catch (err) {
+            problems.push({
+              type: "error",
+              source: "code",
+              message: `Syntax error in tile custom JS: ${err.message}`,
+              coordinate: { r, c },
+              tileId: tile.id,
+              tileName: tile.name
+            });
+          }
+        }
+
+        // 2. Warn if tile script triggers are set but missing actions
+        if (tile.scripts) {
+          tile.scripts.forEach((script, idx) => {
+            if (!script.action) {
+              problems.push({
+                type: "warning",
+                source: "script",
+                message: `Script #${idx+1} is missing an action`,
+                coordinate: { r, c },
+                tileId: tile.id,
+                tileName: tile.name
+              });
+            }
+          });
+        }
+      }
+    }
+  }
+
+  // Scan Custom Palette Blocks for JS syntax errors too
+  Object.keys(state.customBlocks).forEach(id => {
+    const block = state.customBlocks[id];
+    if (block && block.js && block.js.trim().length > 0) {
+      try {
+        new Function("player", "tile", "game", "sound", block.js);
+      } catch (err) {
+        problems.push({
+          type: "error",
+          source: "code",
+          message: `Syntax error in Custom Palette Block [${block.name}] JS: ${err.message}`,
+          paletteId: id,
+          tileName: block.name
+        });
+      }
+    }
+  });
+
+  // Level requirements warnings
+  if (playerSpawnsCount === 0) {
+    problems.push({
+      type: "error",
+      source: "level",
+      message: "No Player Spawn found! Add exactly one 🧙 Spawn block."
+    });
+  } else if (playerSpawnsCount > 1) {
+    problems.push({
+      type: "warning",
+      source: "level",
+      message: `Multiple (${playerSpawnsCount}) Player Spawns found. Only the last one will be active.`
+    });
+  }
+
+  if (portalsCount === 0) {
+    problems.push({
+      type: "warning",
+      source: "level",
+      message: "No Goal Portal (🌀) placed. Level cannot be cleared/won by the player."
+    });
+  }
+
+  if (hasLockedDoors && !hasKeys) {
+    problems.push({
+      type: "error",
+      source: "level",
+      message: "Locked Door (🔒) exists but no Golden Key (🔑) is available to unlock it!"
+    });
+  } else if (!hasLockedDoors && hasKeys) {
+    problems.push({
+      type: "warning",
+      source: "level",
+      message: "Golden Key (🔑) placed on level but no Locked Door (🔒) exists to unlock."
+    });
+  }
+
+  if (state.genre === "platformer" && !hasSolids) {
+    problems.push({
+      type: "warning",
+      source: "level",
+      message: "Platformer genre is selected with gravity enabled, but no solid platform blocks are placed."
+    });
+  }
+
+  // Add captured runtime errors to the list of displayed problems
+  state.runtimeErrors.forEach(err => {
+    problems.push({
+      type: "error",
+      source: "runtime",
+      message: `Runtime Crash: ${err.message}`,
+      coordinate: err.coordinate,
+      tileName: err.tileName,
+      timestamp: err.timestamp
+    });
+  });
+
+  // Render errors inside problems list UI element
+  const problemsListDiv = document.getElementById("problems-list");
+  const problemsCountBadge = document.getElementById("problems-count-badge");
+  const badgeLogic = document.getElementById("badge-logic");
+  const runtimeControls = document.getElementById("runtime-error-controls");
+
+  if (!problemsListDiv) return;
+
+  problemsListDiv.innerHTML = "";
+  problemsCountBadge.textContent = problems.length;
+
+  // Show/Hide badge-logic dot notification based on errors count
+  const errorCount = problems.filter(p => p.type === "error").length;
+  if (errorCount > 0) {
+    badgeLogic.classList.remove("hidden");
+  } else {
+    badgeLogic.classList.add("hidden");
+  }
+
+  // Show/Hide runtime error clean triggers
+  if (state.runtimeErrors.length > 0) {
+    runtimeControls.classList.remove("hidden");
+  } else {
+    runtimeControls.classList.add("hidden");
+  }
+
+  if (problems.length === 0) {
+    problemsListDiv.innerHTML = `<p class="text-[11px] text-gray-500 italic font-mono">No errors or warnings found.</p>`;
+    return;
+  }
+
+  problems.forEach(p => {
+    const isError = p.type === "error";
+    const bgClass = isError ? "bg-red-950/35 border-red-900/40 hover:bg-red-950/60" : "bg-yellow-950/20 border-yellow-900/30 hover:bg-yellow-950/40";
+    const borderClass = "border";
+    const textClass = isError ? "text-red-400" : "text-yellow-400";
+    const subTextClass = isError ? "text-red-300/70" : "text-yellow-300/70";
+    const iconClass = isError ? "fa-times-circle" : "fa-exclamation-triangle";
+
+    let labelTarget = "";
+    let clickHandler = "";
+
+    if (p.coordinate) {
+      labelTarget = `@ (${p.coordinate.c}, ${p.coordinate.r})`;
+      clickHandler = `onclick="navigateToCoordinate(${p.coordinate.r}, ${p.coordinate.c})"`;
+    } else if (p.paletteId) {
+      labelTarget = `Palette: ${p.tileName}`;
+      clickHandler = `onclick="navigateToPaletteBlock('${p.paletteId}')"`;
+    } else {
+      labelTarget = "Global";
+    }
+
+    const card = document.createElement("div");
+    card.className = `${bgClass} ${borderClass} rounded p-2 text-[11px] font-mono transition duration-150 cursor-pointer flex flex-col space-y-1`;
+    if (clickHandler) {
+      card.setAttribute("onclick", clickHandler.match(/"([^"]+)"/)[1]);
+      card.style.cursor = "pointer";
+    }
+
+    card.innerHTML = `
+      <div class="flex items-start justify-between">
+        <span class="${textClass} font-semibold flex items-center">
+          <i class="fas ${iconClass} mr-1.5 text-xs"></i>
+          <span>${isError ? 'ERROR' : 'WARNING'}</span>
+        </span>
+        <span class="text-[9px] font-bold uppercase ${subTextClass} border border-current/25 px-1 rounded font-mono">
+          ${labelTarget}
+        </span>
+      </div>
+      <p class="text-gray-300 leading-normal text-xs font-sans">${p.message}</p>
+    `;
+
+    // Ensure double-clicking or clicking works properly via inline binding or event listener
+    if (clickHandler) {
+      card.addEventListener("click", () => {
+        if (p.coordinate) {
+          window.navigateToCoordinate(p.coordinate.r, p.coordinate.c);
+        } else if (p.paletteId) {
+          window.navigateToPaletteBlock(p.paletteId);
+        }
+      });
+    }
+
+    problemsListDiv.appendChild(card);
+  });
+}
+
 // Window sizing setup
 function resizeCanvas() {
   const containerW = container.clientWidth;
@@ -627,6 +897,9 @@ function setupEventListeners() {
       buildPalettes();
       renderGrid();
       saveToLocalStorage();
+      if (typeof validateScriptsAndLevel === "function") {
+        validateScriptsAndLevel();
+      }
     }
   });
 
@@ -675,6 +948,9 @@ function setupEventListeners() {
       buildPalettes();
       renderGrid();
       saveToLocalStorage();
+      if (typeof validateScriptsAndLevel === "function") {
+        validateScriptsAndLevel();
+      }
     }
   });
   document.getElementById("prop-tile-emoji").addEventListener("input", (e) => {
@@ -684,6 +960,9 @@ function setupEventListeners() {
       buildPalettes();
       renderGrid();
       saveToLocalStorage();
+      if (typeof validateScriptsAndLevel === "function") {
+        validateScriptsAndLevel();
+      }
     }
   });
   document.getElementById("prop-tile-solid").addEventListener("change", (e) => {
@@ -692,6 +971,9 @@ function setupEventListeners() {
       block.solid = e.target.checked;
       renderGrid();
       saveToLocalStorage();
+      if (typeof validateScriptsAndLevel === "function") {
+        validateScriptsAndLevel();
+      }
     }
   });
   document.getElementById("prop-tile-damage").addEventListener("input", (e) => {
@@ -713,6 +995,9 @@ function setupEventListeners() {
     if (block) {
       block.js = e.target.value;
       saveToLocalStorage();
+      if (typeof validateScriptsAndLevel === "function") {
+        validateScriptsAndLevel();
+      }
     }
   });
 
@@ -740,6 +1025,12 @@ function setupEventListeners() {
   });
   document.getElementById("tab-ai-copilot").addEventListener("click", () => {
     toggleRightPanelTab("ai-copilot");
+  });
+
+  // Clear runtime errors button
+  document.getElementById("btn-clear-runtime").addEventListener("click", () => {
+    state.runtimeErrors = [];
+    validateScriptsAndLevel();
   });
 
   // Global Level configs
@@ -771,9 +1062,14 @@ function setupEventListeners() {
     state.lives = Number(e.target.value);
     saveToLocalStorage();
   });
+
+  // Genre select event
   document.getElementById("select-genre").addEventListener("change", (e) => {
     state.genre = e.target.value;
     saveToLocalStorage();
+    if (typeof validateScriptsAndLevel === "function") {
+      validateScriptsAndLevel();
+    }
   });
 
   // Custom Block Builder Modal Actions

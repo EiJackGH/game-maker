@@ -303,8 +303,8 @@
         <button id="tab-properties" class="flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none">
           <i class="fas fa-sliders-h mr-1"></i>Properties
         </button>
-        <button id="tab-logic" class="flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none">
-          <i class="fas fa-network-wired mr-1"></i>Scripts
+        <button id="tab-logic" class="flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none relative">
+          <i class="fas fa-network-wired mr-1"></i>Scripts<span id="badge-logic" class="hidden absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
         </button>
         <button id="tab-ai-copilot" class="flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none" title="AI Assistant Copilot">
           <i class="fas fa-robot mr-1 text-purple-400"></i>AI Copilot
@@ -398,7 +398,7 @@
             <p class="text-[10px] text-gray-400 leading-relaxed font-mono">Hook events to instant actions on collision or tick triggers.</p>
           </div>
 
-          <div id="logic-no-selection" class="text-xs text-gray-400 italic">No block selected to script. Select a block to configure its visual triggers.</div>
+          <div id="logic-no-selection" class="text-xs text-gray-400 italic border border-dashed border-gray-800 p-3 rounded text-center">No block selected to script. Select a block to configure its visual triggers.</div>
 
           <!-- The Visual Blocks Configurator -->
           <div id="logic-builder-panel" class="hidden space-y-4">
@@ -426,6 +426,29 @@
 player.vy = -12; // super bounce
 sound.play('coin');
 game.addCoins(5);"></textarea>
+            </div>
+          </div>
+
+          <!-- Code Errors & Problems List (Always visible inside scripts panel) -->
+          <div id="script-problems-panel" class="border-t border-gray-800 pt-4 space-y-3">
+            <h4 class="text-xs font-bold text-gray-300 flex items-center justify-between">
+              <span class="flex items-center space-x-1.5 text-red-400">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Errors & Problems</span>
+              </span>
+              <span id="problems-count-badge" class="text-[10px] bg-red-950 text-red-300 px-2 py-0.5 rounded-full border border-red-800 font-mono font-bold">0</span>
+            </h4>
+
+            <div id="runtime-error-controls" class="hidden flex items-center justify-between text-[10px] bg-red-950/40 border border-red-900/50 p-2 rounded">
+              <span class="text-red-300 font-mono flex items-center"><i class="fas fa-bug mr-1"></i>Runtime exceptions caught</span>
+              <button id="btn-clear-runtime" class="text-[9px] bg-red-900/60 hover:bg-red-800 text-red-100 px-2 py-0.5 rounded border border-red-700 transition">
+                Clear
+              </button>
+            </div>
+
+            <div id="problems-list" class="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+              <!-- Dynamically populated problems list -->
+              <p class="text-[11px] text-gray-500 italic font-mono">No errors or warnings found.</p>
             </div>
           </div>
         </div>
