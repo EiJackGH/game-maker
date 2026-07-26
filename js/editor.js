@@ -56,6 +56,7 @@ function initEditor() {
   resizeCanvas();
   renderGrid();
   updateSelectionPanel();
+  updateConnectionStatus();
   if (typeof validateScriptsAndLevel === "function") {
     validateScriptsAndLevel();
   }
@@ -1209,6 +1210,60 @@ function setupEventListeners() {
     resizeCanvas();
     renderGrid();
   });
+
+  // Watch for online/offline status changes
+  window.addEventListener("online", updateConnectionStatus);
+  window.addEventListener("offline", updateConnectionStatus);
+}
+
+// Check and update browser online/offline connection state banner display
+function updateConnectionStatus() {
+  const banner = document.getElementById("offline-banner");
+  if (!banner) return;
+  const content = document.getElementById("offline-banner-content");
+  const iconBg = document.getElementById("offline-banner-icon-bg");
+  const icon = document.getElementById("offline-banner-icon");
+  const title = document.getElementById("offline-banner-title");
+  const desc = document.getElementById("offline-banner-desc");
+
+  if (!navigator.onLine) {
+    // Show offline banner
+    banner.classList.remove("hidden");
+
+    // Set offline styles
+    if (content) content.className = "bg-red-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 font-sans text-sm font-semibold border border-red-500 z-50";
+    if (iconBg) iconBg.className = "bg-red-700 p-1.5 rounded-lg flex items-center justify-center";
+    if (icon) icon.className = "fas fa-wifi-slash text-lg";
+    if (title) title.textContent = "No Internet Connection";
+    if (desc) desc.textContent = "Please check your network settings. Some features may not work.";
+
+    // Clear any auto-hide timeout
+    if (window.offlineBannerTimeout) {
+      clearTimeout(window.offlineBannerTimeout);
+      window.offlineBannerTimeout = null;
+    }
+  } else {
+    // If the banner was already visible (meaning we just transitioned from offline to online)
+    if (!banner.classList.contains("hidden")) {
+      // Switch to online success style
+      if (content) content.className = "bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 font-sans text-sm font-semibold border border-emerald-500 z-50";
+      if (iconBg) iconBg.className = "bg-emerald-700 p-1.5 rounded-lg flex items-center justify-center";
+      if (icon) icon.className = "fas fa-wifi text-lg";
+      if (title) title.textContent = "Internet Connection Restored";
+      if (desc) desc.textContent = "You are back online.";
+
+      // Auto-hide after 3 seconds
+      if (window.offlineBannerTimeout) {
+        clearTimeout(window.offlineBannerTimeout);
+      }
+      window.offlineBannerTimeout = setTimeout(() => {
+        banner.classList.add("hidden");
+      }, 3000);
+    } else {
+      // Just to be safe, if already online and banner not shown, keep hidden
+      banner.classList.add("hidden");
+    }
+  }
 }
 
 // Built-in Level templates pre-configs

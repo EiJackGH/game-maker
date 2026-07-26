@@ -35,6 +35,19 @@ function generateStandaloneBundle() {
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-center overflow-hidden font-sans">
 
+  <!-- Connection Status Banner -->
+  <div id="offline-banner" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden transition-all duration-300">
+    <div id="offline-banner-content" class="bg-red-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 font-sans text-sm font-semibold border border-red-500 z-50">
+      <div id="offline-banner-icon-bg" class="bg-red-700 p-1.5 rounded-lg flex items-center justify-center">
+        <i id="offline-banner-icon" class="fas fa-wifi-slash text-lg"></i>
+      </div>
+      <div>
+        <p id="offline-banner-title" class="font-bold">No Internet Connection</p>
+        <p id="offline-banner-desc" class="text-[11px] text-red-100 font-normal">Please check your network settings. Some features may not work.</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Game Box Panel -->
   <div class="w-full max-w-4xl bg-gray-900 border border-purple-500/30 rounded-xl shadow-2xl p-4 md:p-6 space-y-4">
     <!-- Header info -->
@@ -590,8 +603,63 @@ function generateStandaloneBundle() {
       }
     };
 
+    // Check and update browser online/offline connection state banner display
+    function updateConnectionStatus() {
+      const banner = document.getElementById("offline-banner");
+      if (!banner) return;
+      const content = document.getElementById("offline-banner-content");
+      const iconBg = document.getElementById("offline-banner-icon-bg");
+      const icon = document.getElementById("offline-banner-icon");
+      const title = document.getElementById("offline-banner-title");
+      const desc = document.getElementById("offline-banner-desc");
+
+      if (!navigator.onLine) {
+        // Show offline banner
+        banner.classList.remove("hidden");
+
+        // Set offline styles
+        if (content) content.className = "bg-red-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 font-sans text-sm font-semibold border border-red-500 z-50";
+        if (iconBg) iconBg.className = "bg-red-700 p-1.5 rounded-lg flex items-center justify-center";
+        if (icon) icon.className = "fas fa-wifi-slash text-lg";
+        if (title) title.textContent = "No Internet Connection";
+        if (desc) desc.textContent = "Please check your network settings. Some features may not work.";
+
+        // Clear any auto-hide timeout
+        if (window.offlineBannerTimeout) {
+          clearTimeout(window.offlineBannerTimeout);
+          window.offlineBannerTimeout = null;
+        }
+      } else {
+        // If the banner was already visible (meaning we just transitioned from offline to online)
+        if (!banner.classList.contains("hidden")) {
+          // Switch to online success style
+          if (content) content.className = "bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 font-sans text-sm font-semibold border border-emerald-500 z-50";
+          if (iconBg) iconBg.className = "bg-emerald-700 p-1.5 rounded-lg flex items-center justify-center";
+          if (icon) icon.className = "fas fa-wifi text-lg";
+          if (title) title.textContent = "Internet Connection Restored";
+          if (desc) desc.textContent = "You are back online.";
+
+          // Auto-hide after 3 seconds
+          if (window.offlineBannerTimeout) {
+            clearTimeout(window.offlineBannerTimeout);
+          }
+          window.offlineBannerTimeout = setTimeout(() => {
+            banner.classList.add("hidden");
+          }, 3000);
+        } else {
+          // Just to be safe, if already online and banner not shown, keep hidden
+          banner.classList.add("hidden");
+        }
+      }
+    }
+
+    // Register online/offline status changes
+    window.addEventListener("online", updateConnectionStatus);
+    window.addEventListener("offline", updateConnectionStatus);
+
     // Auto starts on pageload
     window.addEventListener("DOMContentLoaded", () => {
+      updateConnectionStatus();
       game.start();
       document.getElementById("btn-win-replay").addEventListener("click", () => { game.start(); });
       document.getElementById("btn-fail-retry").addEventListener("click", () => { game.start(); });
