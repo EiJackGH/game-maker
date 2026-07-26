@@ -1295,6 +1295,9 @@ const TEMPLATES = {
       // Spawn Player on left
       grid[13][2] = g("player_spawn");
 
+      // Add a default Ruby Gem block on the canvas above player spawn
+      grid[11][2] = g("gem");
+
       // Place lava gap in middle ground
       for (let c = 10; c <= 18; c++) {
         grid[15][c] = g("lava");
