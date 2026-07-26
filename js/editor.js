@@ -203,6 +203,9 @@ function buildPalettes() {
       state.selectedCell = null;
       state.inspectingPaletteId = block.id;
       updateSelectionPanel();
+      if (typeof checkTutorialProgress === "function") {
+        checkTutorialProgress();
+      }
     });
 
     // Sort into tabs
@@ -433,6 +436,9 @@ window.navigateToCoordinate = function(r, c) {
   setTool("select");
   updateSelectionPanel();
   renderGrid();
+  if (typeof checkTutorialProgress === "function") {
+    checkTutorialProgress();
+  }
 };
 
 window.navigateToPaletteBlock = function(id) {
@@ -1817,6 +1823,9 @@ function handleCanvasClickOrDrag(row, col, isRightClick) {
 
   renderGrid();
   saveToLocalStorage();
+  if (typeof checkTutorialProgress === "function") {
+    checkTutorialProgress();
+  }
 }
 
 // Visual bucket tool: flood fill grid cells

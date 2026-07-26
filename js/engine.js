@@ -671,6 +671,9 @@ const game = {
     this.running = false;
     retroAudio.play("win");
     document.getElementById("game-win-banner").classList.remove("hidden");
+    if (typeof checkTutorialProgress === "function") {
+      checkTutorialProgress();
+    }
   },
 
   triggerFail(reason) {
@@ -766,6 +769,9 @@ btnPlayMode.addEventListener("click", () => {
   btnEditMode.className = "px-3 py-1.5 rounded text-xs font-semibold flex items-center space-x-1.5 transition text-gray-400 hover:text-white";
 
   game.start();
+  if (typeof checkTutorialProgress === "function") {
+    checkTutorialProgress();
+  }
 });
 
 // Win-Fail action handlers
