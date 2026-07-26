@@ -149,6 +149,101 @@ const TUTORIALS = [
         }
       }
     ]
+  },
+  {
+    id: "maze_raider",
+    title: "4. Top-Down Maze Raider",
+    desc: "Build a maze, select the Top-Down genre, paint walls, and lead the Player to the exit portal.",
+    steps: [
+      {
+        title: "Switch Genre to Top-Down",
+        check: () => {
+          return state.genre === "topdown";
+        }
+      },
+      {
+        title: "Paint 10 Brick Walls (🧱)",
+        check: () => {
+          let count = 0;
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "brick") {
+                count++;
+              }
+            }
+          }
+          return count >= 10;
+        }
+      },
+      {
+        title: "Place a Player Spawn (🧙)",
+        check: () => {
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "player_spawn") {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+      },
+      {
+        title: "Win playmode!",
+        check: () => {
+          const winBanner = document.getElementById("game-win-banner");
+          return winBanner && !winBanner.classList.contains("hidden");
+        }
+      }
+    ]
+  },
+  {
+    id: "bouncy_playground",
+    title: "5. Bouncy Mushroom Playground",
+    desc: "Setup high-jumping springboards. Bounce off bouncy pads to reach floating ruby gems and high goals.",
+    steps: [
+      {
+        title: "Paint 2 Bouncy Pads (🍄)",
+        check: () => {
+          let count = 0;
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "bouncy_pad") {
+                count++;
+              }
+            }
+          }
+          return count >= 2;
+        }
+      },
+      {
+        title: "Paint a Ruby Gem (💎)",
+        check: () => {
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "gem") {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+      },
+      {
+        title: "Inspect Bouncy Pad properties",
+        check: () => {
+          const activeBlock = getInspectedBlock();
+          return activeBlock && activeBlock.id === "bouncy_pad";
+        }
+      },
+      {
+        title: "Reach Goal Portal & Win!",
+        check: () => {
+          const winBanner = document.getElementById("game-win-banner");
+          return winBanner && !winBanner.classList.contains("hidden");
+        }
+      }
+    ]
   }
 ];
 
@@ -253,6 +348,33 @@ function selectTutorial(idx) {
     }
     state.grid[13][2] = g("player_spawn");
     state.grid[13][28] = g("portal");
+  } else if (idx === 3) {
+    // Top-Down Maze Raider: start with empty grid (or minor helper blocks) and topdown genre
+    state.genre = "topdown";
+    state.gravity = 0;
+    state.speed = 4.0;
+    const g = getBlockById;
+    // pre-place basic outline / helper blocks
+    for (let c = 0; c < 30; c++) {
+      state.grid[0][c] = g("brick");
+      state.grid[15][c] = g("brick");
+    }
+    state.grid[1][28] = g("portal");
+  } else if (idx === 4) {
+    // Bouncy Mushroom Playground: setup standard platformer grid with gems and high goals
+    state.genre = "platformer";
+    state.gravity = 0.5;
+    state.speed = 4.0;
+    const g = getBlockById;
+    for (let c = 0; c < 30; c++) {
+      state.grid[15][c] = g("ground");
+    }
+    state.grid[14][2] = g("player_spawn");
+    state.grid[5][28] = g("portal");
+    // Place some high-up floating platforms
+    for (let c = 26; c < 30; c++) {
+      state.grid[6][c] = g("stone");
+    }
   }
 
   syncFormControls();
