@@ -250,6 +250,174 @@ const TUTORIALS = [
 let activeTutorialIdx = null;
 let currentTutorialStepIdx = 0;
 
+// Seeded Mulberry32 pseudo-random number generator
+function createPRNG(seed) {
+  return function() {
+    let t = seed += 0x6D2B79F5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Lists of vocabulary for constructing millions of unique game-making tutorial titles
+const GEN_NOUNS = [
+  "Odyssey", "Chamber", "Labyrinth", "Ruins", "Sanctuary", "Fortress", "Crypt",
+  "Nexus", "Grid", "Ascent", "Descent", "Haven", "Domain", "Sector", "Void",
+  "Outpost", "Cathedral", "Passage", "Basin", "Spires", "Gorge", "Peak", "Valleys"
+];
+
+const GEN_ADJECTIVES = [
+  "Cosmic", "Lava", "Neon", "Cyber", "Shadow", "Crystal", "Radiant", "Infernal",
+  "Abyssal", "Gilded", "Volcanic", "Frozen", "Prismatic", "Solar", "Lunar", "Runic",
+  "Spectral", "Techno", "Astral", "Verdant", "Boreal", "Eolian", "Tectonic"
+];
+
+const GEN_VERBS = [
+  "Raider", "Architect", "Designer", "Survivor", "Master", "Chronicles", "Trial",
+  "Explorer", "Legacy", "Escape", "Quest", "Origins", "Crucible", "Showdown"
+];
+
+// Handles compiling dynamic procedural checklists and generating starting setups
+function generateProceduralTutorial() {
+  const seedInput = document.getElementById("gen-tutorial-seed");
+  let seed = parseInt(seedInput ? seedInput.value : "12345") || 12345;
+
+  const genreSelect = document.getElementById("gen-tutorial-genre");
+  let genre = genreSelect ? genreSelect.value : "random";
+
+  const difficultySelect = document.getElementById("gen-tutorial-difficulty");
+  let difficulty = difficultySelect ? difficultySelect.value : "random";
+
+  const mechanicSelect = document.getElementById("gen-tutorial-mechanic");
+  let mechanic = mechanicSelect ? mechanicSelect.value : "random";
+
+  const rand = createPRNG(seed);
+
+  // Resolve random options
+  if (genre === "random") {
+    genre = rand() < 0.5 ? "platformer" : "topdown";
+  }
+  if (difficulty === "random") {
+    const diffs = ["easy", "medium", "hard"];
+    difficulty = diffs[Math.floor(rand() * diffs.length)];
+  }
+  if (mechanic === "random") {
+    const mechs = ["hazards", "keys", "physics", "collectibles"];
+    mechanic = mechs[Math.floor(rand() * mechs.length)];
+  }
+
+  // Synthesize a unique title
+  const adj = GEN_ADJECTIVES[Math.floor(rand() * GEN_ADJECTIVES.length)];
+  const noun = GEN_NOUNS[Math.floor(rand() * GEN_NOUNS.length)];
+  const verb = GEN_VERBS[Math.floor(rand() * GEN_VERBS.length)];
+  const uniqueTitle = `${adj} ${noun} ${verb}`;
+  const displayTitle = `★ Procedural: ${uniqueTitle} (Seed #${seed})`;
+
+  // Configure description based on difficulty and mechanic
+  const desc = `Procedural challenge (${difficulty.toUpperCase()} difficulty) focused on ${mechanic.replace("_", " ")}. Master this customized layout, complete the dynamic check list, and win Play Mode!`;
+
+  // Build Checklist Steps
+  const steps = [];
+
+  // Step 1: Tool & Block selection
+  let focusBlockId = "ground";
+  let targetPaintCount = 3;
+
+  if (mechanic === "hazards") {
+    focusBlockId = rand() < 0.5 ? "lava" : "spikes";
+    targetPaintCount = difficulty === "easy" ? 2 : difficulty === "medium" ? 4 : 6;
+  } else if (mechanic === "keys") {
+    focusBlockId = rand() < 0.5 ? "key" : "locked_door";
+    targetPaintCount = difficulty === "easy" ? 1 : 2;
+  } else if (mechanic === "physics") {
+    focusBlockId = "bouncy_pad";
+    targetPaintCount = difficulty === "easy" ? 2 : difficulty === "medium" ? 3 : 4;
+  } else if (mechanic === "collectibles") {
+    focusBlockId = rand() < 0.5 ? "coin" : "gem";
+    targetPaintCount = difficulty === "easy" ? 3 : difficulty === "medium" ? 6 : 9;
+  }
+
+  const focusBlock = DEFAULT_BLOCKS[focusBlockId] || DEFAULT_BLOCKS.ground;
+
+  steps.push({
+    title: `Select ${focusBlock.name} (${focusBlock.emoji})`,
+    check: () => {
+      return state.activeBlockId === focusBlockId;
+    }
+  });
+
+  steps.push({
+    title: `Paint at least ${targetPaintCount} ${focusBlock.name} blocks`,
+    check: () => {
+      let count = 0;
+      for (let r = 0; r < state.rows; r++) {
+        for (let c = 0; c < state.cols; c++) {
+          if (state.grid[r][c] && state.grid[r][c].id === focusBlockId) {
+            count++;
+          }
+        }
+      }
+      return count >= targetPaintCount;
+    }
+  });
+
+  // Step 2: Inspection property rule check
+  steps.push({
+    title: `Inspect properties of ${focusBlock.name} block`,
+    check: () => {
+      const activeBlock = getInspectedBlock();
+      return activeBlock && activeBlock.id === focusBlockId;
+    }
+  });
+
+  // Step 3: Spawn placement check
+  steps.push({
+    title: "Place a Player Spawn block (🧙)",
+    check: () => {
+      for (let r = 0; r < state.rows; r++) {
+        for (let c = 0; c < state.cols; c++) {
+          if (state.grid[r][c] && state.grid[r][c].id === "player_spawn") {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+  });
+
+  // Step 4: Finish/Win state check
+  steps.push({
+    title: "Launch Play Mode & Win procedural challenge!",
+    check: () => {
+      const winBanner = document.getElementById("game-win-banner");
+      return winBanner && !winBanner.classList.contains("hidden");
+    }
+  });
+
+  // Compile full tutorial payload
+  const proceduralTutorial = {
+    id: `procedural_${seed}_${genre}_${difficulty}_${mechanic}`,
+    title: displayTitle,
+    desc: desc,
+    steps: steps,
+    // Add custom generators info for setup payload
+    proceduralConfig: {
+      genre,
+      difficulty,
+      mechanic,
+      seed,
+      rand
+    }
+  };
+
+  // Inject or overwrite into standard TUTORIALS array (keeping the first 5 standard, and appending/replacing at index 5)
+  TUTORIALS[5] = proceduralTutorial;
+
+  // Execute selecting this generated tutorial
+  selectTutorial(5);
+}
+
 function setupTutorialEventListeners() {
   const btnTutorials = document.getElementById("btn-tutorials");
   const modalTutorials = document.getElementById("modal-tutorials");
@@ -259,6 +427,46 @@ function setupTutorialEventListeners() {
   const btnCloseHelper = document.getElementById("btn-tutorial-close-helper");
   const btnPrev = document.getElementById("btn-tutorial-prev");
   const btnNext = document.getElementById("btn-tutorial-next");
+
+  // Tab switching inside Tutorials Selection Modal
+  const btnTabAcademy = document.getElementById("btn-tab-academy");
+  const btnTabGenerator = document.getElementById("btn-tab-generator");
+  const tabAcademyContent = document.getElementById("tutorials-academy-tab");
+  const tabGeneratorContent = document.getElementById("tutorials-generator-tab");
+
+  const btnRoll = document.getElementById("btn-gen-tutorial-roll");
+  const btnConstruct = document.getElementById("btn-construct-tutorial");
+
+  if (btnTabAcademy && btnTabGenerator && tabAcademyContent && tabGeneratorContent) {
+    btnTabAcademy.addEventListener("click", () => {
+      btnTabAcademy.className = "flex-1 py-1.5 text-center text-xs font-bold rounded-md transition-all bg-purple-600 text-white focus:outline-none";
+      btnTabGenerator.className = "flex-1 py-1.5 text-center text-xs font-bold rounded-md transition-all text-gray-400 hover:text-white focus:outline-none";
+      tabAcademyContent.classList.remove("hidden");
+      tabGeneratorContent.classList.add("hidden");
+    });
+
+    btnTabGenerator.addEventListener("click", () => {
+      btnTabGenerator.className = "flex-1 py-1.5 text-center text-xs font-bold rounded-md transition-all bg-purple-600 text-white focus:outline-none";
+      btnTabAcademy.className = "flex-1 py-1.5 text-center text-xs font-bold rounded-md transition-all text-gray-400 hover:text-white focus:outline-none";
+      tabGeneratorContent.classList.remove("hidden");
+      tabAcademyContent.classList.add("hidden");
+    });
+  }
+
+  if (btnRoll) {
+    btnRoll.addEventListener("click", () => {
+      const randSeed = Math.floor(Math.random() * 99999999) + 1;
+      const input = document.getElementById("gen-tutorial-seed");
+      if (input) input.value = randSeed;
+      retroAudio.play("jump");
+    });
+  }
+
+  if (btnConstruct) {
+    btnConstruct.addEventListener("click", () => {
+      generateProceduralTutorial();
+    });
+  }
 
   if (btnTutorials) {
     btnTutorials.addEventListener("click", () => {
@@ -374,6 +582,39 @@ function selectTutorial(idx) {
     // Place some high-up floating platforms
     for (let c = 26; c < 30; c++) {
       state.grid[6][c] = g("stone");
+    }
+  } else if (idx === 5) {
+    // PROCEDURAL GENERATED SETUP
+    const config = TUTORIALS[5].proceduralConfig;
+    const g = getBlockById;
+    const rand = config.rand;
+
+    state.genre = config.genre;
+    if (state.genre === "platformer") {
+      state.gravity = 0.5;
+      state.speed = 4.0;
+      // Pre-place simple bottom structure with gaps
+      for (let c = 0; c < 30; c++) {
+        if (c < 8 || c > 20 || rand() > 0.3) {
+          state.grid[15][c] = g("ground");
+        }
+      }
+      // Put a portal
+      state.grid[14][28] = g("portal");
+    } else {
+      state.gravity = 0;
+      state.speed = 4.0;
+      // Top-Down: Pre-place basic outer bounds
+      for (let c = 0; c < 30; c++) {
+        state.grid[0][c] = g("brick");
+        state.grid[15][c] = g("brick");
+      }
+      for (let r = 0; r < 16; r++) {
+        state.grid[r][0] = g("brick");
+        state.grid[r][29] = g("brick");
+      }
+      // Put a portal
+      state.grid[1][28] = g("portal");
     }
   }
 
