@@ -35,7 +35,11 @@ const state = {
   redoStack: [],
 
   // Captured runtime exceptions/errors
-  runtimeErrors: []
+  runtimeErrors: [],
+
+  // File Manager State
+  currentFileId: null, // unique file ID if loaded/saved, e.g. "file_xxxxxx"
+  currentFileName: ""  // user-visible name
 };
 
 const ORIGINAL_DEFAULT_BLOCKS = JSON.parse(JSON.stringify(DEFAULT_BLOCKS));
@@ -62,6 +66,263 @@ function initEditor() {
   }
 }
 
+// File Manager LocalStorage and operations logic
+function getSavedFiles() {
+  try {
+    const raw = localStorage.getItem("blocks_saved_files");
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    console.error("Error reading saved files list:", e);
+    return {};
+  }
+}
+
+function saveSavedFiles(files) {
+  try {
+    localStorage.setItem("blocks_saved_files", JSON.stringify(files));
+  } catch (e) {
+    console.error("Error saving files list:", e);
+  }
+}
+
+function updateActiveFileDisplay() {
+  const titleEl = document.getElementById("active-file-title");
+  const inputEl = document.getElementById("file-name-input");
+
+  if (state.currentFileId) {
+    titleEl.textContent = state.currentFileName || "Untitled Level";
+    inputEl.value = state.currentFileName || "";
+  } else {
+    titleEl.textContent = "Unsaved / Sandbox Level";
+    inputEl.value = "";
+  }
+}
+
+function renderSavedFilesList() {
+  const listDiv = document.getElementById("saved-files-list");
+  const countBadge = document.getElementById("saved-files-count");
+  if (!listDiv) return;
+
+  const files = getSavedFiles();
+  const fileKeys = Object.keys(files);
+  countBadge.textContent = fileKeys.length;
+
+  if (fileKeys.length === 0) {
+    listDiv.innerHTML = `<p class="text-[11px] text-gray-500 italic font-mono text-center py-2">No saved local files found.</p>`;
+    return;
+  }
+
+  listDiv.innerHTML = "";
+  // Sort files by last saved timestamp
+  const sortedKeys = fileKeys.sort((a, b) => (files[b].updatedAt || 0) - (files[a].updatedAt || 0));
+
+  sortedKeys.forEach(id => {
+    const file = files[id];
+    const isCurrent = state.currentFileId === id;
+
+    const card = document.createElement("div");
+    card.className = `p-2 rounded-lg border text-xs font-sans transition duration-150 flex flex-col space-y-1.5 ${isCurrent ? 'bg-purple-950/30 border-purple-800' : 'bg-gray-950 border-gray-800 hover:border-gray-700'}`;
+
+    // Format timestamp nicely
+    const dateStr = file.updatedAt ? new Date(file.updatedAt).toLocaleDateString() + " " + new Date(file.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Unknown Date";
+
+    card.innerHTML = `
+      <div class="flex items-start justify-between min-w-0">
+        <div class="truncate flex-1 pr-2">
+          <h5 class="font-bold text-gray-200 truncate">${file.name}</h5>
+          <p class="text-[9px] text-gray-500 font-mono">${file.genre.toUpperCase()} • ${file.cols}x${file.rows} • ${dateStr}</p>
+        </div>
+        <div class="flex items-center space-x-1 flex-shrink-0">
+          <button class="btn-load-file px-1.5 py-1 bg-purple-900/50 hover:bg-purple-800 border border-purple-700/60 rounded text-[10px] text-purple-200 transition" title="Load Level">
+            <i class="fas fa-folder-open"></i>
+          </button>
+          <button class="btn-download-file px-1.5 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[10px] text-gray-300 hover:text-white transition" title="Download JSON">
+            <i class="fas fa-download"></i>
+          </button>
+          <button class="btn-delete-file px-1.5 py-1 bg-red-950/50 hover:bg-red-900 border border-red-900 rounded text-[10px] text-red-300 transition" title="Delete Level">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Bind item buttons
+    card.querySelector(".btn-load-file").addEventListener("click", () => {
+      loadSavedFile(id);
+    });
+    card.querySelector(".btn-download-file").addEventListener("click", () => {
+      downloadSavedFileJSON(id);
+    });
+    card.querySelector(".btn-delete-file").addEventListener("click", () => {
+      if (confirm(`Are you sure you want to delete the file "${file.name}"?`)) {
+        deleteSavedFile(id);
+      }
+    });
+
+    listDiv.appendChild(card);
+  });
+}
+
+function loadSavedFile(id) {
+  const files = getSavedFiles();
+  const file = files[id];
+  if (!file) return;
+
+  state.cols = file.cols || 30;
+  state.rows = file.rows || 16;
+  state.grid = file.grid || [];
+  state.customBlocks = file.customBlocks || {};
+  state.gravity = file.gravity !== undefined ? file.gravity : 0.5;
+  state.speed = file.speed !== undefined ? file.speed : 4.0;
+  state.lives = file.lives || 3;
+  state.genre = file.genre || "platformer";
+
+  state.currentFileId = id;
+  state.currentFileName = file.name;
+
+  adjustGridDimensions();
+  syncFormControls();
+  buildPalettes();
+  resizeCanvas();
+  renderGrid();
+  updateActiveFileDisplay();
+  renderSavedFilesList();
+
+  // Persist the last-loaded active session structure so page reload brings us back here
+  saveSessionMetadataOnly();
+
+  if (typeof validateScriptsAndLevel === "function") {
+    validateScriptsAndLevel();
+  }
+}
+
+function createSavedFile(name) {
+  if (!name.trim()) return;
+  const id = "file_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+
+  const files = getSavedFiles();
+  files[id] = {
+    id: id,
+    name: name,
+    cols: state.cols,
+    rows: state.rows,
+    grid: state.grid,
+    customBlocks: state.customBlocks,
+    gravity: state.gravity,
+    speed: state.speed,
+    lives: state.lives,
+    genre: state.genre,
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+
+  saveSavedFiles(files);
+  state.currentFileId = id;
+  state.currentFileName = name;
+
+  updateActiveFileDisplay();
+  renderSavedFilesList();
+  saveToLocalStorage();
+}
+
+function saveActiveFile() {
+  if (!state.currentFileId) {
+    // If not saved yet, prompt for a name
+    const nameInput = document.getElementById("file-name-input");
+    const name = nameInput ? nameInput.value.trim() : "";
+    if (!name) {
+      alert("Please enter a File Name first!");
+      return;
+    }
+    createSavedFile(name);
+    return;
+  }
+
+  const nameInput = document.getElementById("file-name-input");
+  const name = nameInput ? nameInput.value.trim() : state.currentFileName;
+  if (!name) {
+    alert("Please enter a valid File Name!");
+    return;
+  }
+
+  const files = getSavedFiles();
+  if (files[state.currentFileId]) {
+    state.currentFileName = name;
+    files[state.currentFileId].name = name;
+    files[state.currentFileId].cols = state.cols;
+    files[state.currentFileId].rows = state.rows;
+    files[state.currentFileId].grid = state.grid;
+    files[state.currentFileId].customBlocks = state.customBlocks;
+    files[state.currentFileId].gravity = state.gravity;
+    files[state.currentFileId].speed = state.speed;
+    files[state.currentFileId].lives = state.lives;
+    files[state.currentFileId].genre = state.genre;
+    files[state.currentFileId].updatedAt = Date.now();
+
+    saveSavedFiles(files);
+    updateActiveFileDisplay();
+    renderSavedFilesList();
+    saveToLocalStorage();
+  }
+}
+
+function saveAsNewFile(name) {
+  if (!name.trim()) {
+    alert("Please enter a File Name!");
+    return;
+  }
+  createSavedFile(name);
+}
+
+function deleteSavedFile(id) {
+  const files = getSavedFiles();
+  if (files[id]) {
+    delete files[id];
+    saveSavedFiles(files);
+
+    if (state.currentFileId === id) {
+      state.currentFileId = null;
+      state.currentFileName = "";
+      updateActiveFileDisplay();
+    }
+    renderSavedFilesList();
+    saveToLocalStorage();
+  }
+}
+
+function downloadSavedFileJSON(id) {
+  const files = getSavedFiles();
+  const file = files[id];
+  if (!file) return;
+
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(file, null, 2));
+  const dlAnchorElem = document.createElement('a');
+  dlAnchorElem.setAttribute("href", dataStr);
+  dlAnchorElem.setAttribute("download", `blocks_${file.name.toLowerCase().replace(/\s+/g, "_")}.json`);
+  dlAnchorElem.click();
+}
+
+function saveSessionMetadataOnly() {
+  const meta = {
+    currentFileId: state.currentFileId,
+    currentFileName: state.currentFileName
+  };
+  localStorage.setItem("blocks_session_metadata", JSON.stringify(meta));
+}
+
+function loadSessionMetadata() {
+  try {
+    const raw = localStorage.getItem("blocks_session_metadata");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state.currentFileId = parsed.currentFileId || null;
+      state.currentFileName = parsed.currentFileName || "";
+    }
+  } catch (e) {
+    console.error("Error reading session metadata:", e);
+  }
+}
+
 // Save & Load to/from LocalStorage
 function saveToLocalStorage() {
   const data = {
@@ -75,6 +336,25 @@ function saveToLocalStorage() {
     genre: state.genre
   };
   localStorage.setItem("blocks_game_maker_data", JSON.stringify(data));
+  saveSessionMetadataOnly();
+
+  // If we are working on a currently saved file, auto-sync its contents too!
+  if (state.currentFileId) {
+    const files = getSavedFiles();
+    if (files[state.currentFileId]) {
+      files[state.currentFileId].cols = state.cols;
+      files[state.currentFileId].rows = state.rows;
+      files[state.currentFileId].grid = state.grid;
+      files[state.currentFileId].customBlocks = state.customBlocks;
+      files[state.currentFileId].gravity = state.gravity;
+      files[state.currentFileId].speed = state.speed;
+      files[state.currentFileId].lives = state.lives;
+      files[state.currentFileId].genre = state.genre;
+      files[state.currentFileId].updatedAt = Date.now();
+      saveSavedFiles(files);
+    }
+  }
+
   if (typeof validateScriptsAndLevel === "function") {
     validateScriptsAndLevel();
   }
@@ -82,6 +362,7 @@ function saveToLocalStorage() {
 
 function loadFromLocalStorage() {
   try {
+    loadSessionMetadata();
     const raw = localStorage.getItem("blocks_game_maker_data");
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -97,6 +378,8 @@ function loadFromLocalStorage() {
       // Validate/resize level grid array
       adjustGridDimensions();
       syncFormControls();
+      updateActiveFileDisplay();
+      renderSavedFilesList();
     } else {
       loadTemplate("platformer_demo");
     }
@@ -1033,6 +1316,87 @@ function setupEventListeners() {
   document.getElementById("tab-ai-copilot").addEventListener("click", () => {
     toggleRightPanelTab("ai-copilot");
   });
+  document.getElementById("tab-files").addEventListener("click", () => {
+    toggleRightPanelTab("files");
+  });
+
+  // Local File Manager actions
+  document.getElementById("btn-file-save").addEventListener("click", () => {
+    const input = document.getElementById("file-name-input");
+    const name = input ? input.value.trim() : "";
+    if (state.currentFileId) {
+      saveActiveFile();
+    } else {
+      if (!name) {
+        alert("Please enter a file name!");
+        return;
+      }
+      createSavedFile(name);
+    }
+  });
+
+  document.getElementById("btn-file-save-as").addEventListener("click", () => {
+    const input = document.getElementById("file-name-input");
+    const name = input ? input.value.trim() : "";
+    if (!name) {
+      alert("Please enter a file name to Save As!");
+      return;
+    }
+    saveAsNewFile(name);
+  });
+
+  document.getElementById("btn-file-new").addEventListener("click", () => {
+    if (confirm("Create a brand new clean layout? Any unsaved changes will be lost.")) {
+      state.currentFileId = null;
+      state.currentFileName = "";
+      resetGridToEmpty();
+      syncFormControls();
+      updateActiveFileDisplay();
+      renderSavedFilesList();
+      renderGrid();
+    }
+  });
+
+  document.getElementById("btn-file-import-mgr").addEventListener("click", () => {
+    document.getElementById("file-import-mgr-input").click();
+  });
+
+  document.getElementById("file-import-mgr-input").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        const name = parsed.name || file.name.replace(/\.json$/i, "") || "Imported Level";
+
+        // Let's create this imported JSON straight as a new file in manager
+        const id = "file_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+        const files = getSavedFiles();
+        files[id] = {
+          id: id,
+          name: name,
+          cols: parsed.cols || 30,
+          rows: parsed.rows || 16,
+          grid: parsed.grid || [],
+          customBlocks: parsed.customBlocks || {},
+          gravity: parsed.gravity !== undefined ? parsed.gravity : 0.5,
+          speed: parsed.speed !== undefined ? parsed.speed : 4.0,
+          lives: parsed.lives || 3,
+          genre: parsed.genre || "platformer",
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        };
+        saveSavedFiles(files);
+        loadSavedFile(id);
+        alert(`Successfully imported file "${name}" into saved list!`);
+      } catch (err) {
+        alert("Invalid file format. Ensure it is correct JSON level configuration.");
+      }
+    };
+    reader.readAsText(file);
+  });
 
   // Clear runtime errors button
   document.getElementById("btn-clear-runtime").addEventListener("click", () => {
@@ -1491,15 +1855,21 @@ function toggleRightPanelTab(tabName) {
   const tabProp = document.getElementById("tab-properties");
   const tabLogic = document.getElementById("tab-logic");
   const tabAi = document.getElementById("tab-ai-copilot");
+  const tabFiles = document.getElementById("tab-files");
   const contentProp = document.getElementById("content-properties");
   const contentLogic = document.getElementById("content-logic");
   const contentAi = document.getElementById("content-ai-copilot");
+  const contentFiles = document.getElementById("content-files");
 
   // Reset styles
-  [tabProp, tabLogic, tabAi].forEach(t => {
-    t.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none";
+  [tabProp, tabLogic, tabAi, tabFiles].forEach(t => {
+    if (t) {
+      t.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none";
+    }
   });
-  [contentProp, contentLogic, contentAi].forEach(c => c.classList.add("hidden"));
+  [contentProp, contentLogic, contentAi, contentFiles].forEach(c => {
+    if (c) c.classList.add("hidden");
+  });
 
   if (tabName === "properties") {
     tabProp.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
@@ -1510,6 +1880,9 @@ function toggleRightPanelTab(tabName) {
   } else if (tabName === "ai-copilot") {
     tabAi.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
     contentAi.classList.remove("hidden");
+  } else if (tabName === "files") {
+    if (tabFiles) tabFiles.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
+    if (contentFiles) contentFiles.classList.remove("hidden");
   }
 }
 

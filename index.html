@@ -522,10 +522,78 @@
         <button id="tab-ai-copilot" class="flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none" title="AI Assistant Copilot">
           <i class="fas fa-robot mr-1 text-purple-400"></i>AI Copilot
         </button>
+        <button id="tab-files" class="flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none" title="Local File Manager">
+          <i class="fas fa-folder mr-1 text-purple-400"></i>Files
+        </button>
       </div>
 
       <!-- Panel Body Container -->
       <div class="flex-1 overflow-y-auto p-4 space-y-5">
+
+        <!-- TAB Content: Files Manager -->
+        <div id="content-files" class="hidden space-y-4">
+          <div class="bg-purple-950/40 p-3 border border-purple-900/50 rounded-lg">
+            <h3 class="text-xs font-bold text-purple-300 mb-1 flex items-center space-x-1.5">
+              <i class="fas fa-folder-open"></i>
+              <span>Local File Manager</span>
+            </h3>
+            <p class="text-[10px] text-purple-200/80 leading-relaxed font-mono">Save and manage multiple game layouts directly in your browser!</p>
+          </div>
+
+          <!-- Current File Status Info -->
+          <div class="bg-gray-950 p-3 border border-gray-800 rounded-lg space-y-2">
+            <h4 class="text-[10px] uppercase font-bold text-gray-500 font-mono">Current Active File</h4>
+            <div id="file-active-info" class="text-xs text-gray-300 font-semibold truncate flex items-center space-x-1.5">
+              <i class="fas fa-file-alt text-purple-400 text-sm"></i>
+              <span id="active-file-title">Untitled Level</span>
+            </div>
+          </div>
+
+          <!-- File Operations Form -->
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <label class="text-[10px] uppercase font-bold text-gray-500 font-mono block">File Name</label>
+              <input type="text" id="file-name-input" class="w-full bg-gray-950 border border-gray-700 rounded px-2.5 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-purple-500" placeholder="e.g. My Castle Level" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-file-save" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-1.5 rounded text-[10px] transition flex items-center justify-center space-x-1 shadow">
+                <i class="fas fa-save"></i>
+                <span>Save Current</span>
+              </button>
+              <button id="btn-file-save-as" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 font-bold py-2 px-1.5 rounded text-[10px] transition flex items-center justify-center space-x-1 shadow">
+                <i class="fas fa-copy"></i>
+                <span>Save As New</span>
+              </button>
+            </div>
+
+            <button id="btn-file-new" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-2 rounded text-[10px] transition flex items-center justify-center space-x-1.5 shadow">
+              <i class="fas fa-file-medical"></i>
+              <span>Create New Clean Layout</span>
+            </button>
+          </div>
+
+          <!-- Saved Files List Section -->
+          <div class="space-y-2 pt-2 border-t border-gray-800">
+            <h4 class="text-[10px] uppercase font-bold text-gray-400 font-mono flex items-center justify-between">
+              <span>Saved Files Directory</span>
+              <span id="saved-files-count" class="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded-full border border-purple-800 font-mono font-bold">0</span>
+            </h4>
+
+            <div class="flex items-center space-x-2">
+              <button id="btn-file-import-mgr" class="flex-1 py-1 px-2 bg-gray-850 hover:bg-gray-750 border border-gray-700 rounded text-[10px] text-gray-300 hover:text-white transition flex items-center justify-center space-x-1">
+                <i class="fas fa-file-import"></i>
+                <span>Import JSON File</span>
+              </button>
+              <input type="file" id="file-import-mgr-input" class="hidden" accept=".json" />
+            </div>
+
+            <div id="saved-files-list" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+              <!-- Dynamically populated via js/editor.js -->
+              <p class="text-[11px] text-gray-500 italic font-mono text-center py-2">No saved local files found.</p>
+            </div>
+          </div>
+        </div>
 
         <!-- TAB Content: Properties Manager -->
         <div id="content-properties" class="space-y-4">
