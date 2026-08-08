@@ -134,6 +134,11 @@ const game = {
     hud.style.opacity = "1";
     hud.style.transform = "translateY(0)";
 
+    // Show mobile controls if enabled
+    if (typeof updateMobileControlsVisibility === "function") {
+      updateMobileControlsVisibility();
+    }
+
     // Bind Controls
     window.addEventListener("keydown", this.handleKeyDownBound);
     window.addEventListener("keyup", this.handleKeyUpBound);
@@ -155,8 +160,15 @@ const game = {
 
     // Hide HUD
     const hud = document.getElementById("game-hud");
-    hud.style.opacity = "0";
-    hud.style.transform = "translateY(8px)";
+    if (hud) {
+      hud.style.opacity = "0";
+      hud.style.transform = "translateY(8px)";
+    }
+
+    // Hide mobile controls
+    if (typeof updateMobileControlsVisibility === "function") {
+      updateMobileControlsVisibility();
+    }
 
     // Unbind inputs
     window.removeEventListener("keydown", this.handleKeyDownBound);

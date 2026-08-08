@@ -29,6 +29,7 @@ const state = {
   speed: 4.0,
   lives: 3,
   genre: "platformer", // platformer or topdown
+  mobileMode: false,
 
   // History for Undo/Redo
   undoStack: [],
@@ -176,6 +177,7 @@ function loadSavedFile(id) {
   state.speed = file.speed !== undefined ? file.speed : 4.0;
   state.lives = file.lives || 3;
   state.genre = file.genre || "platformer";
+  state.mobileMode = file.mobileMode !== undefined ? file.mobileMode : false;
 
   state.currentFileId = id;
   state.currentFileName = file.name;
@@ -212,6 +214,7 @@ function createSavedFile(name) {
     speed: state.speed,
     lives: state.lives,
     genre: state.genre,
+    mobileMode: state.mobileMode,
     createdAt: Date.now(),
     updatedAt: Date.now()
   };
@@ -257,6 +260,7 @@ function saveActiveFile() {
     files[state.currentFileId].speed = state.speed;
     files[state.currentFileId].lives = state.lives;
     files[state.currentFileId].genre = state.genre;
+    files[state.currentFileId].mobileMode = state.mobileMode;
     files[state.currentFileId].updatedAt = Date.now();
 
     saveSavedFiles(files);
@@ -333,7 +337,8 @@ function saveToLocalStorage() {
     gravity: state.gravity,
     speed: state.speed,
     lives: state.lives,
-    genre: state.genre
+    genre: state.genre,
+    mobileMode: state.mobileMode
   };
   localStorage.setItem("blocks_game_maker_data", JSON.stringify(data));
   saveSessionMetadataOnly();
@@ -350,6 +355,7 @@ function saveToLocalStorage() {
       files[state.currentFileId].speed = state.speed;
       files[state.currentFileId].lives = state.lives;
       files[state.currentFileId].genre = state.genre;
+      files[state.currentFileId].mobileMode = state.mobileMode;
       files[state.currentFileId].updatedAt = Date.now();
       saveSavedFiles(files);
     }
@@ -373,6 +379,7 @@ function loadFromLocalStorage() {
       state.speed = parsed.speed !== undefined ? parsed.speed : 4.0;
       state.lives = parsed.lives || 3;
       state.genre = parsed.genre || "platformer";
+      state.mobileMode = parsed.mobileMode !== undefined ? parsed.mobileMode : false;
       state.grid = parsed.grid || [];
 
       // Validate/resize level grid array
@@ -398,6 +405,56 @@ function syncFormControls() {
   document.getElementById("label-speed").textContent = state.speed;
   document.getElementById("select-lives").value = state.lives;
   document.getElementById("select-genre").value = state.genre;
+  updateMobileButtonUI();
+}
+
+function updateMobileButtonUI() {
+  const lbl = document.getElementById("label-mobile-mode");
+  if (!lbl) return;
+  if (state.mobileMode) {
+    lbl.textContent = "ON";
+    lbl.className = "text-xs font-mono font-bold text-emerald-400 animate-pulse";
+  } else {
+    lbl.textContent = "OFF";
+    lbl.className = "text-xs font-mono font-bold text-red-500";
+  }
+}
+
+function updateMobileControlsVisibility() {
+  const controls = document.getElementById("mobile-controls");
+  if (!controls) return;
+
+  // Mobile mode controls only show during running simulation (Play Mode)
+  if (state.mobileMode && typeof game !== "undefined" && game.running) {
+    controls.classList.remove("opacity-0", "translate-y-4", "pointer-events-none");
+    controls.classList.add("opacity-100", "translate-y-0");
+
+    // Adjust control layout depending on Genre
+    const btnUp = document.getElementById("mbtn-up");
+    const btnDown = document.getElementById("mbtn-down");
+    const btnJump = document.getElementById("mbtn-jump");
+
+    if (state.genre === "platformer") {
+      // In platformer: up/down buttons are hidden or inactive, JUMP button is shown
+      if (btnUp) btnUp.classList.add("invisible");
+      if (btnDown) btnDown.classList.add("invisible");
+      if (btnJump) {
+        btnJump.classList.remove("hidden");
+        btnJump.classList.add("flex");
+      }
+    } else {
+      // In top-down: up/down buttons are visible, JUMP button is hidden
+      if (btnUp) btnUp.classList.remove("invisible");
+      if (btnDown) btnDown.classList.remove("invisible");
+      if (btnJump) {
+        btnJump.classList.add("hidden");
+        btnJump.classList.remove("flex");
+      }
+    }
+  } else {
+    controls.classList.add("opacity-0", "translate-y-4", "pointer-events-none");
+    controls.classList.remove("opacity-100", "translate-y-0");
+  }
 }
 
 function resetGridToEmpty() {
@@ -1385,6 +1442,7 @@ function setupEventListeners() {
           speed: parsed.speed !== undefined ? parsed.speed : 4.0,
           lives: parsed.lives || 3,
           genre: parsed.genre || "platformer",
+        mobileMode: parsed.mobileMode !== undefined ? parsed.mobileMode : false,
           createdAt: Date.now(),
           updatedAt: Date.now()
         };
@@ -1437,11 +1495,28 @@ function setupEventListeners() {
   // Genre select event
   document.getElementById("select-genre").addEventListener("change", (e) => {
     state.genre = e.target.value;
+    // Update mobile controls layout/visibility when genre changes
+    if (typeof updateMobileControlsVisibility === "function") {
+      updateMobileControlsVisibility();
+    }
     saveToLocalStorage();
     if (typeof validateScriptsAndLevel === "function") {
       validateScriptsAndLevel();
     }
   });
+
+  // Mobile Mode toggle button click handler
+  const btnMobileMode = document.getElementById("btn-mobile-mode");
+  if (btnMobileMode) {
+    btnMobileMode.addEventListener("click", () => {
+      state.mobileMode = !state.mobileMode;
+      updateMobileButtonUI();
+      if (typeof updateMobileControlsVisibility === "function") {
+        updateMobileControlsVisibility();
+      }
+      saveToLocalStorage();
+    });
+  }
 
   // Custom Block Builder Modal Actions
   document.getElementById("btn-add-custom-block").addEventListener("click", () => {
@@ -1527,6 +1602,7 @@ function setupEventListeners() {
         state.speed = parsed.speed !== undefined ? parsed.speed : 4.0;
         state.lives = parsed.lives || 3;
         state.genre = parsed.genre || "platformer";
+        state.mobileMode = parsed.mobileMode !== undefined ? parsed.mobileMode : false;
         state.grid = parsed.grid || [];
 
         adjustGridDimensions();
@@ -1584,6 +1660,45 @@ function setupEventListeners() {
   // Watch for online/offline status changes
   window.addEventListener("online", updateConnectionStatus);
   window.addEventListener("offline", updateConnectionStatus);
+
+  // Bind Virtual Touch Controls
+  setupVirtualControlListeners();
+}
+
+function setupVirtualControlListeners() {
+  const bindings = [
+    { id: "mbtn-up", key: "ArrowUp" },
+    { id: "mbtn-down", key: "ArrowDown" },
+    { id: "mbtn-left", key: "ArrowLeft" },
+    { id: "mbtn-right", key: "ArrowRight" },
+    { id: "mbtn-jump", key: " " }
+  ];
+
+  bindings.forEach(binding => {
+    const btn = document.getElementById(binding.id);
+    if (!btn) return;
+
+    // We support both Mouse and Touch events to ensure seamless operation
+    const press = (e) => {
+      e.preventDefault();
+      if (typeof game !== "undefined") {
+        game.keysPressed[binding.key] = true;
+      }
+    };
+
+    const release = (e) => {
+      e.preventDefault();
+      if (typeof game !== "undefined") {
+        game.keysPressed[binding.key] = false;
+      }
+    };
+
+    btn.addEventListener("mousedown", press);
+    btn.addEventListener("touchstart", press);
+    btn.addEventListener("mouseup", release);
+    btn.addEventListener("touchend", release);
+    btn.addEventListener("mouseleave", release);
+  });
 }
 
 // Check and update browser online/offline connection state banner display
