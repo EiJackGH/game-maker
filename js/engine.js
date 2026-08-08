@@ -771,6 +771,10 @@ btnEditMode.addEventListener("click", () => {
   // Active styles toggling
   btnEditMode.className = "px-3 py-1.5 rounded text-xs font-semibold flex items-center space-x-1.5 transition bg-purple-600 text-white shadow";
   btnPlayMode.className = "px-3 py-1.5 rounded text-xs font-semibold flex items-center space-x-1.5 transition text-gray-400 hover:text-white";
+
+  if (typeof closeDrawers === "function") {
+    closeDrawers();
+  }
 });
 
 btnPlayMode.addEventListener("click", () => {
@@ -783,6 +787,10 @@ btnPlayMode.addEventListener("click", () => {
   game.start();
   if (typeof checkTutorialProgress === "function") {
     checkTutorialProgress();
+  }
+
+  if (typeof closeDrawers === "function") {
+    closeDrawers();
   }
 });
 
