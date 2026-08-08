@@ -425,6 +425,31 @@
         <!-- Interactive Game & Level Canvas -->
         <canvas id="game-canvas" class="custom-canvas bg-gray-900 border border-purple-900/40 shadow-2xl transition-all duration-75"></canvas>
 
+        <!-- Mobile Touch Virtual Controls Overlay -->
+        <div id="mobile-controls" class="absolute inset-x-0 bottom-4 px-4 flex justify-between items-end z-30 pointer-events-none transition-all duration-300 opacity-0 transform translate-y-4">
+          <!-- Left: D-Pad -->
+          <div class="flex flex-col items-center pointer-events-auto select-none">
+            <div class="grid grid-cols-3 gap-1 bg-gray-900/80 p-2 rounded-xl border border-purple-500/30 backdrop-blur-sm shadow-xl">
+              <div></div>
+              <button id="mbtn-up" class="w-10 h-10 bg-gray-800 active:bg-purple-600 hover:bg-gray-750 text-white rounded-lg flex items-center justify-center text-sm shadow transition border border-gray-750 active:scale-95"><i class="fas fa-chevron-up"></i></button>
+              <div></div>
+              <button id="mbtn-left" class="w-10 h-10 bg-gray-800 active:bg-purple-600 hover:bg-gray-750 text-white rounded-lg flex items-center justify-center text-sm shadow transition border border-gray-750 active:scale-95"><i class="fas fa-chevron-left"></i></button>
+              <div></div>
+              <button id="mbtn-right" class="w-10 h-10 bg-gray-800 active:bg-purple-600 hover:bg-gray-750 text-white rounded-lg flex items-center justify-center text-sm shadow transition border border-gray-750 active:scale-95"><i class="fas fa-chevron-right"></i></button>
+              <div></div>
+              <button id="mbtn-down" class="w-10 h-10 bg-gray-800 active:bg-purple-600 hover:bg-gray-750 text-white rounded-lg flex items-center justify-center text-sm shadow transition border border-gray-750 active:scale-95"><i class="fas fa-chevron-down"></i></button>
+              <div></div>
+            </div>
+          </div>
+          <!-- Right: Action Buttons -->
+          <div class="flex space-x-2 pointer-events-auto select-none">
+            <button id="mbtn-jump" class="w-16 h-16 bg-purple-600 active:bg-purple-500 text-white rounded-full flex flex-col items-center justify-center text-xs font-bold shadow-2xl shadow-purple-900/50 transition border border-purple-500 active:scale-95">
+              <span class="text-sm"><i class="fas fa-arrow-up"></i></span>
+              <span>JUMP</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Welcome Overlay when starting blank -->
         <div id="editor-overlay-msg" class="absolute pointer-events-none inset-0 flex flex-col items-center justify-center bg-gray-950/40 backdrop-blur-xs opacity-0 transition duration-300">
           <div class="bg-gray-900/90 border border-gray-800 p-6 rounded-xl text-center max-w-sm space-y-3 shadow-2xl">
@@ -833,6 +858,12 @@ game.addCoins(5);"></textarea>
           <option value="99">Infinite</option>
         </select>
       </div>
+
+      <!-- Mobile Mode Button -->
+      <button id="btn-mobile-mode" class="flex items-center space-x-2 bg-gray-950 border border-gray-800 rounded px-2.5 py-1 hover:bg-gray-900 transition">
+        <span class="text-xs font-mono text-gray-400"><i class="fas fa-mobile-alt mr-1 text-purple-400"></i>Mobile Mode:</span>
+        <span id="label-mobile-mode" class="text-xs font-mono font-bold text-red-500">OFF</span>
+      </button>
     </div>
 
     <!-- Retro Sound Engine test panel -->
