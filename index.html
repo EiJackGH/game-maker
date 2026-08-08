@@ -40,6 +40,9 @@
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col overflow-hidden selection:bg-purple-600 selection:text-white">
 
+  <!-- Mobile Drawer Backdrop Overlay -->
+  <div id="mobile-drawer-backdrop" class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden transition-opacity duration-300"></div>
+
   <!-- Connection Status Banner -->
   <div id="offline-banner" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden transition-all duration-300">
     <div id="offline-banner-content" class="bg-red-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 font-sans text-sm font-semibold border border-red-500">
@@ -216,25 +219,38 @@
   </div>
 
   <!-- TOP HEADER PANEL -->
-  <header class="bg-gray-900 border-b border-gray-800 px-4 py-2 flex items-center justify-between z-10">
-    <div class="flex items-center space-x-3">
-      <div class="bg-gradient-to-tr from-purple-600 to-indigo-600 text-white p-2 rounded-lg flex items-center justify-center shadow-lg shadow-purple-900/30">
-        <i class="fas fa-cubes text-xl"></i>
+  <header class="bg-gray-900 border-b border-gray-800 px-4 py-2 flex flex-col md:flex-row items-center gap-3 md:gap-0 md:justify-between z-10">
+    <div class="flex items-center justify-between w-full md:w-auto">
+      <div class="flex items-center space-x-3">
+        <div class="bg-gradient-to-tr from-purple-600 to-indigo-600 text-white p-2 rounded-lg flex items-center justify-center shadow-lg shadow-purple-900/30">
+          <i class="fas fa-cubes text-xl"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg tracking-wide bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">BLOCKS</h1>
+          <p class="text-[10px] text-gray-400 font-mono">Retro Game IDE v1.0</p>
+        </div>
       </div>
-      <div>
-        <h1 class="font-bold text-lg tracking-wide bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">BLOCKS</h1>
-        <p class="text-[10px] text-gray-400 font-mono">Retro Game IDE v1.0</p>
+      <!-- Mobile toggles for panels -->
+      <div class="flex items-center space-x-1.5 md:hidden">
+        <button id="btn-toggle-palette" class="p-1.5 bg-gray-800 hover:bg-gray-750 text-purple-400 rounded border border-gray-700 text-xs flex items-center space-x-1" title="Toggle Palette">
+          <i class="fas fa-tools text-[10px]"></i>
+          <span class="text-[10px] font-semibold">Palette</span>
+        </button>
+        <button id="btn-toggle-properties" class="p-1.5 bg-gray-800 hover:bg-gray-750 text-purple-400 rounded border border-gray-700 text-xs flex items-center space-x-1" title="Toggle Sidebar">
+          <i class="fas fa-sliders-h text-[10px]"></i>
+          <span class="text-[10px] font-semibold">Sidebar</span>
+        </button>
       </div>
     </div>
 
     <!-- Middle Controls: Play / Edit Mode & Game Mode Selector -->
-    <div class="flex items-center space-x-4 bg-gray-950/50 p-1 rounded-lg border border-gray-800">
+    <div class="flex items-center justify-center flex-wrap gap-2 bg-gray-950/50 p-1.5 rounded-lg border border-gray-800 w-full md:w-auto">
       <div class="flex items-center space-x-1">
-        <button id="btn-edit-mode" class="px-3 py-1.5 rounded text-xs font-semibold flex items-center space-x-1.5 transition bg-purple-600 text-white shadow">
+        <button id="btn-edit-mode" class="px-2.5 py-1.5 rounded text-xs font-semibold flex items-center space-x-1 transition bg-purple-600 text-white shadow">
           <i class="fas fa-edit"></i>
           <span>Design Mode</span>
         </button>
-        <button id="btn-play-mode" class="px-3 py-1.5 rounded text-xs font-semibold flex items-center space-x-1.5 transition text-gray-400 hover:text-white">
+        <button id="btn-play-mode" class="px-2.5 py-1.5 rounded text-xs font-semibold flex items-center space-x-1 transition text-gray-400 hover:text-white">
           <i class="fas fa-play"></i>
           <span>Play Mode</span>
         </button>
@@ -242,9 +258,9 @@
 
       <div class="h-5 w-[1px] bg-gray-800"></div>
 
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-1.5">
         <label for="select-genre" class="text-xs text-gray-400 font-mono">Genre:</label>
-        <select id="select-genre" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-purple-300 font-semibold focus:outline-none focus:border-purple-500">
+        <select id="select-genre" class="bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-xs text-purple-300 font-semibold focus:outline-none focus:border-purple-500">
           <option value="platformer">Platformer (Gravity)</option>
           <option value="topdown">Top-Down (RPG/Maze)</option>
         </select>
@@ -252,17 +268,18 @@
     </div>
 
     <!-- Right Controls: Save/Load, Import/Export, and Template selector -->
-    <div class="flex items-center space-x-3">
+    <div class="flex items-center justify-center flex-wrap gap-2 w-full md:w-auto">
       <!-- Tutorials Button -->
-      <button id="btn-tutorials" class="p-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-bold transition flex items-center space-x-1.5 shadow" title="Game Tutorials">
+      <button id="btn-tutorials" class="p-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-xs font-bold transition flex items-center space-x-1 shadow" title="Game Tutorials">
         <i class="fas fa-graduation-cap"></i>
-        <span>Game Tutorials</span>
+        <span class="hidden sm:inline">Game Tutorials</span>
+        <span class="inline sm:hidden">Tutorials</span>
       </button>
 
       <!-- Template Dropdown -->
       <div class="flex items-center space-x-1">
         <i class="fas fa-folder-open text-gray-400 text-xs"></i>
-        <select id="select-template" class="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-purple-500">
+        <select id="select-template" class="bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-xs text-gray-300 focus:outline-none focus:border-purple-500">
           <option value="" disabled selected>Load Template...</option>
           <option value="platformer_demo">Platformer Demo</option>
           <option value="maze_demo">Maze Raider Demo</option>
@@ -271,7 +288,7 @@
       </div>
 
       <!-- Divider -->
-      <div class="h-5 w-[1px] bg-gray-800"></div>
+      <div class="h-5 w-[1px] bg-gray-800 hidden md:block"></div>
 
       <!-- Action buttons -->
       <button id="btn-import" class="p-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs text-gray-300 hover:text-white transition flex items-center space-x-1" title="Import Level JSON">
@@ -285,9 +302,10 @@
         <span class="hidden md:inline">Export JSON</span>
       </button>
 
-      <button id="btn-publish" class="p-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded text-xs font-bold transition flex items-center space-x-1.5 shadow" title="Export Standalone Webpage for GitHub Pages">
+      <button id="btn-publish" class="p-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded text-xs font-bold transition flex items-center space-x-1 shadow" title="Export Standalone Webpage for GitHub Pages">
         <i class="fab fa-github"></i>
-        <span>Build Pages Dist</span>
+        <span class="hidden sm:inline">Build Pages Dist</span>
+        <span class="inline sm:hidden">Build</span>
       </button>
     </div>
   </header>
@@ -296,15 +314,18 @@
   <main class="flex-1 flex overflow-hidden">
 
     <!-- LEFT PANEL: TILE PALETTE & DRAWING TOOLS -->
-    <section class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden">
+    <section id="left-palette" class="fixed lg:relative inset-y-0 left-0 w-64 bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden z-50 -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
       <!-- Toolbox Header -->
       <div class="p-3 border-b border-gray-800 bg-gray-900/50 flex items-center justify-between">
         <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center space-x-1.5">
           <i class="fas fa-tools text-purple-400"></i>
           <span>Drawing Tools</span>
         </h2>
-        <!-- Tool Status -->
-        <span id="active-tool-display" class="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded font-mono border border-purple-800">Brush</span>
+        <div class="flex items-center space-x-2">
+          <!-- Tool Status -->
+          <span id="active-tool-display" class="text-[10px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded font-mono border border-purple-800">Brush</span>
+          <button id="btn-close-palette" class="lg:hidden text-gray-400 hover:text-white p-1" title="Close Palette"><i class="fas fa-times"></i></button>
+        </div>
       </div>
 
       <!-- Action Tools -->
@@ -387,24 +408,24 @@
     <!-- CENTER PANEL: INTERACTIVE CANVAS GRID -->
     <section class="flex-1 bg-gray-950 flex flex-col overflow-hidden relative">
       <!-- Grid Settings Toolbar -->
-      <div class="bg-gray-900/60 border-b border-gray-800 px-4 py-2 flex items-center justify-between">
-        <div class="flex items-center space-x-3 text-xs font-mono text-gray-400">
+      <div class="bg-gray-900/60 border-b border-gray-800 px-4 py-2 flex flex-col sm:flex-row gap-2 sm:gap-0 items-center justify-between">
+        <div class="flex items-center justify-center flex-wrap gap-2 text-xs font-mono text-gray-400">
           <!-- Coordinates & Stats -->
           <div class="flex items-center space-x-1">
             <i class="fas fa-compress text-gray-500"></i>
-            <span>Zoom:</span>
+            <span class="hidden sm:inline">Zoom:</span>
             <span id="label-zoom" class="text-gray-200">100%</span>
           </div>
           <div class="h-4 w-[1px] bg-gray-800"></div>
           <div class="flex items-center space-x-1">
             <i class="fas fa-crosshairs text-gray-500"></i>
-            <span>Cursor:</span>
+            <span class="hidden sm:inline">Cursor:</span>
             <span id="label-cursor" class="text-gray-200">0, 0</span>
           </div>
           <div class="h-4 w-[1px] bg-gray-800"></div>
           <div class="flex items-center space-x-1">
             <i class="fas fa-coins text-yellow-500"></i>
-            <span>Level Coins:</span>
+            <span class="hidden sm:inline">Level Coins:</span>
             <span id="label-coins" class="text-yellow-400 font-bold">0</span>
           </div>
         </div>
@@ -481,7 +502,7 @@
       </div>
 
       <!-- Playmode GUI Hud Info -->
-      <div id="game-hud" class="absolute bottom-4 left-4 bg-gray-900/95 border border-purple-500/30 p-3 rounded-lg flex items-center space-x-6 text-sm font-mono shadow-2xl z-10 pointer-events-none transition duration-200 opacity-0 transform translate-y-2">
+      <div id="game-hud" class="absolute bottom-4 left-4 right-4 md:right-auto bg-gray-900/95 border border-purple-500/30 p-2.5 md:p-3 rounded-lg flex items-center justify-around md:justify-start space-x-3 md:space-x-6 text-xs md:text-sm font-mono shadow-2xl z-10 pointer-events-none transition duration-200 opacity-0 transform translate-y-2">
         <div class="flex items-center space-x-2">
           <i class="fas fa-heart text-red-500"></i>
           <span class="text-gray-400">Health:</span>
@@ -502,7 +523,7 @@
       </div>
 
       <!-- FLOATING TUTORIAL HELPER PANEL -->
-      <div id="tutorial-helper" class="absolute top-4 right-4 bg-gray-900/95 border-2 border-purple-500/80 p-4 rounded-xl shadow-2xl max-w-sm w-80 z-40 transition-all duration-300 transform translate-y-[-10px] opacity-0 pointer-events-none flex flex-col space-y-3">
+      <div id="tutorial-helper" class="absolute top-4 left-4 right-4 md:left-auto md:w-80 bg-gray-900/95 border-2 border-purple-500/80 p-3.5 md:p-4 rounded-xl shadow-2xl z-40 transition-all duration-300 transform translate-y-[-10px] opacity-0 pointer-events-none flex flex-col space-y-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-1.5 text-purple-400">
             <i class="fas fa-graduation-cap"></i>
@@ -535,7 +556,12 @@
     </section>
 
     <!-- RIGHT PANEL: DEVELOPER PANEL & LOGIC BLOCKS BUILDER -->
-    <section class="w-80 bg-gray-900 border-l border-gray-800 flex flex-col overflow-hidden">
+    <section id="right-sidebar" class="fixed lg:relative inset-y-0 right-0 w-80 bg-gray-900 border-l border-gray-800 flex flex-col overflow-hidden z-50 translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+      <!-- Mobile Close Tab for Right Panel -->
+      <div class="lg:hidden flex items-center justify-between p-2 border-b border-gray-800 bg-gray-950">
+        <span class="text-xs font-bold text-gray-400 font-mono">Sidebar Options</span>
+        <button id="btn-close-properties" class="text-gray-400 hover:text-white p-1" title="Close Sidebar"><i class="fas fa-times"></i></button>
+      </div>
       <!-- Right Panel Header Tabs -->
       <div class="flex border-b border-gray-800 bg-gray-950">
         <button id="tab-properties" class="flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none">

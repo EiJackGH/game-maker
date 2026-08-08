@@ -67,6 +67,38 @@ function initEditor() {
   }
 }
 
+// Mobile drawer helper functions
+function openPalette() {
+  const leftPalette = document.getElementById("left-palette");
+  const backdrop = document.getElementById("mobile-drawer-backdrop");
+  if (leftPalette && backdrop) {
+    leftPalette.classList.remove("-translate-x-full");
+    backdrop.classList.remove("hidden");
+  }
+}
+
+function openSidebar() {
+  const rightSidebar = document.getElementById("right-sidebar");
+  const backdrop = document.getElementById("mobile-drawer-backdrop");
+  if (rightSidebar && backdrop) {
+    rightSidebar.classList.remove("translate-x-full");
+    backdrop.classList.remove("hidden");
+  }
+}
+
+function closeDrawers() {
+  const leftPalette = document.getElementById("left-palette");
+  const rightSidebar = document.getElementById("right-sidebar");
+  const backdrop = document.getElementById("mobile-drawer-backdrop");
+  if (leftPalette) leftPalette.classList.add("-translate-x-full");
+  if (rightSidebar) rightSidebar.classList.add("translate-x-full");
+  if (backdrop) backdrop.classList.add("hidden");
+}
+
+window.openPalette = openPalette;
+window.openSidebar = openSidebar;
+window.closeDrawers = closeDrawers;
+
 // File Manager LocalStorage and operations logic
 function getSavedFiles() {
   try {
@@ -546,6 +578,7 @@ function buildPalettes() {
       if (typeof checkTutorialProgress === "function") {
         checkTutorialProgress();
       }
+      closeDrawers();
     });
 
     // Sort into tabs
@@ -1661,6 +1694,19 @@ function setupEventListeners() {
   window.addEventListener("online", updateConnectionStatus);
   window.addEventListener("offline", updateConnectionStatus);
 
+  // Mobile drawer controls
+  const btnTogglePalette = document.getElementById("btn-toggle-palette");
+  const btnToggleProperties = document.getElementById("btn-toggle-properties");
+  const btnClosePalette = document.getElementById("btn-close-palette");
+  const btnCloseProperties = document.getElementById("btn-close-properties");
+  const mobileBackdrop = document.getElementById("mobile-drawer-backdrop");
+
+  if (btnTogglePalette) btnTogglePalette.addEventListener("click", openPalette);
+  if (btnToggleProperties) btnToggleProperties.addEventListener("click", openSidebar);
+  if (btnClosePalette) btnClosePalette.addEventListener("click", closeDrawers);
+  if (btnCloseProperties) btnCloseProperties.addEventListener("click", closeDrawers);
+  if (mobileBackdrop) mobileBackdrop.addEventListener("click", closeDrawers);
+
   // Bind Virtual Touch Controls
   setupVirtualControlListeners();
 }
@@ -1956,6 +2002,7 @@ function loadTemplate(templateId) {
   if (selectTmpl) {
     selectTmpl.value = templateId;
   }
+  closeDrawers();
 }
 
 function closeCustomBlockModal() {
@@ -2285,6 +2332,7 @@ function setTool(tool) {
   activeBtn.classList.remove("bg-gray-800", "text-gray-400");
 
   document.getElementById("active-tool-display").textContent = tool.charAt(0).toUpperCase() + tool.slice(1);
+  closeDrawers();
 }
 
 // Handle Paint Brush & Eraser Drag Drawing Click events
@@ -2310,6 +2358,7 @@ function handleCanvasClickOrDrag(row, col, isRightClick) {
     state.selectedCell = { r: row, c: col };
     state.inspectingPaletteId = null;
     updateSelectionPanel();
+    openSidebar();
   }
 
   renderGrid();
