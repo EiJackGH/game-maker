@@ -23,6 +23,9 @@ function generateStandaloneBundle() {
   <style>
     .custom-canvas {
       image-rendering: pixelated;
+      max-width: 100%;
+      height: auto;
+      object-fit: contain;
     }
     @keyframes pulse-soft {
       0%, 100% { opacity: 1; }

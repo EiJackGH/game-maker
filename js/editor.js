@@ -53,11 +53,29 @@ const container = document.getElementById("canvas-container");
 // Block dimensions (base size)
 const TILE_SIZE = 32;
 
+function getFitZoom() {
+  const containerW = container.clientWidth || window.innerWidth;
+  const containerH = container.clientHeight || window.innerHeight;
+  const calculatedW = state.cols * TILE_SIZE;
+  const calculatedH = state.rows * TILE_SIZE;
+
+  const padding = 24; // 12px margin on each side
+  const fitW = (containerW - padding) / calculatedW;
+  const fitH = (containerH - padding) / calculatedH;
+
+  let fitZoom = Math.min(fitW, fitH);
+  fitZoom = Math.max(0.3, Math.min(1.0, fitZoom));
+  return Number(fitZoom.toFixed(2));
+}
+
 // Initialize Editor
 function initEditor() {
   loadFromLocalStorage();
   buildPalettes();
   setupEventListeners();
+  state.zoom = getFitZoom();
+  state.panX = 0;
+  state.panY = 0;
   resizeCanvas();
   renderGrid();
   updateSelectionPanel();
@@ -217,6 +235,9 @@ function loadSavedFile(id) {
   adjustGridDimensions();
   syncFormControls();
   buildPalettes();
+  state.zoom = getFitZoom();
+  state.panX = 0;
+  state.panY = 0;
   resizeCanvas();
   renderGrid();
   updateActiveFileDisplay();
@@ -1251,7 +1272,7 @@ function setupEventListeners() {
     applyCanvasTransform();
   });
   document.getElementById("btn-zoom-reset").addEventListener("click", () => {
-    state.zoom = 1.0;
+    state.zoom = getFitZoom();
     state.panX = 0;
     state.panY = 0;
     applyCanvasTransform();
@@ -1544,6 +1565,13 @@ function setupEventListeners() {
     btnMobileMode.addEventListener("click", () => {
       state.mobileMode = !state.mobileMode;
       updateMobileButtonUI();
+      if (state.mobileMode) {
+        state.zoom = getFitZoom();
+        state.panX = 0;
+        state.panY = 0;
+        resizeCanvas();
+        renderGrid();
+      }
       if (typeof updateMobileControlsVisibility === "function") {
         updateMobileControlsVisibility();
       }
@@ -1686,6 +1714,12 @@ function setupEventListeners() {
 
   // Watch for system resizing
   window.addEventListener("resize", () => {
+    // Dynamically adjust zoom on mobile layouts to prevent canvas size overflow
+    if (window.innerWidth < 1024 || state.mobileMode) {
+      state.zoom = getFitZoom();
+      state.panX = 0;
+      state.panY = 0;
+    }
     resizeCanvas();
     renderGrid();
   });
@@ -1993,6 +2027,9 @@ function loadTemplate(templateId) {
   // Sync editor controls
   syncFormControls();
   buildPalettes();
+  state.zoom = getFitZoom();
+  state.panX = 0;
+  state.panY = 0;
   resizeCanvas();
   renderGrid();
   saveToLocalStorage();
