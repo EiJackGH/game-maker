@@ -244,6 +244,300 @@ const TUTORIALS = [
         }
       }
     ]
+  },
+  {
+    id: "enemy_patrol_combat",
+    title: "6. Enemy Patrol & Combat",
+    desc: "Introduce hostile Goblins to your level. Dodge or lure patrol enemies away and reach the Goal Portal.",
+    steps: [
+      {
+        title: "Paint 2 Goblin Enemies (👾)",
+        check: () => {
+          let count = 0;
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "patrol_enemy") {
+                count++;
+              }
+            }
+          }
+          return count >= 2;
+        }
+      },
+      {
+        title: "Place a Player Spawn (🧙)",
+        check: () => {
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "player_spawn") {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+      },
+      {
+        title: "Enter Play Mode & Win",
+        check: () => {
+          const winBanner = document.getElementById("game-win-banner");
+          return winBanner && !winBanner.classList.contains("hidden");
+        }
+      }
+    ]
+  },
+  {
+    id: "interactive_speed_pads",
+    title: "7. Interactive Speed Pads",
+    desc: "Inspect bouncy pad properties and experiment with trampoline physics and sound effects.",
+    steps: [
+      {
+        title: "Paint 3 Bouncy Pads (🍄)",
+        check: () => {
+          let count = 0;
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "bouncy_pad") {
+                count++;
+              }
+            }
+          }
+          return count >= 3;
+        }
+      },
+      {
+        title: "Inspect Bouncy Pad properties",
+        check: () => {
+          const activeBlock = getInspectedBlock();
+          return activeBlock && activeBlock.id === "bouncy_pad";
+        }
+      },
+      {
+        title: "Win playmode using high bounce pads!",
+        check: () => {
+          const winBanner = document.getElementById("game-win-banner");
+          return winBanner && !winBanner.classList.contains("hidden");
+        }
+      }
+    ]
+  },
+  {
+    id: "treasure_hunt",
+    title: "8. Treasure Hunt",
+    desc: "Create an exploration challenge filled with scattered riches. Collect coins and high-value gems.",
+    steps: [
+      {
+        title: "Paint 5 Gold Coins (🪙)",
+        check: () => {
+          let count = 0;
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "coin") {
+                count++;
+              }
+            }
+          }
+          return count >= 5;
+        }
+      },
+      {
+        title: "Paint 2 Ruby Gems (💎)",
+        check: () => {
+          let count = 0;
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "gem") {
+                count++;
+              }
+            }
+          }
+          return count >= 2;
+        }
+      },
+      {
+        title: "Place a Player Spawn (🧙)",
+        check: () => {
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "player_spawn") {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+      },
+      {
+        title: "Win Play Mode!",
+        check: () => {
+          const winBanner = document.getElementById("game-win-banner");
+          return winBanner && !winBanner.classList.contains("hidden");
+        }
+      }
+    ]
+  },
+  {
+    id: "custom_block_designer",
+    title: "9. Custom Block Designer",
+    desc: "Construct entirely new game block concepts using the Custom Block Builder modal.",
+    steps: [
+      {
+        title: "Create a Custom Block type",
+        check: () => {
+          return Object.keys(state.customBlocks).length >= 1;
+        }
+      },
+      {
+        title: "Select your Custom Block",
+        check: () => {
+          return state.customBlocks[state.activeBlockId] !== undefined;
+        }
+      },
+      {
+        title: "Paint at least 3 Custom Blocks",
+        check: () => {
+          let count = 0;
+          const customKeys = Object.keys(state.customBlocks);
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && customKeys.includes(state.grid[r][c].id)) {
+                count++;
+              }
+            }
+          }
+          return count >= 3;
+        }
+      },
+      {
+        title: "Win Play Mode!",
+        check: () => {
+          const winBanner = document.getElementById("game-win-banner");
+          return winBanner && !winBanner.classList.contains("hidden");
+        }
+      }
+    ]
+  },
+  {
+    id: "gravity_flipping",
+    title: "10. Gravity & Speed Sandbox",
+    desc: "Experiment with level-wide physics engine parameters. Change starting speed and gravity to customize movement.",
+    steps: [
+      {
+        title: "Change Game Speed to 5 or higher",
+        check: () => {
+          return state.speed >= 5.0;
+        }
+      },
+      {
+        title: "Set Gravity to 0.7 or higher",
+        check: () => {
+          return state.gravity >= 0.7;
+        }
+      },
+      {
+        title: "Place a Player Spawn (🧙)",
+        check: () => {
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "player_spawn") {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+      },
+      {
+        title: "Win Play Mode!",
+        check: () => {
+          const winBanner = document.getElementById("game-win-banner");
+          return winBanner && !winBanner.classList.contains("hidden");
+        }
+      }
+    ]
+  },
+  {
+    id: "ai_bot_integration",
+    title: "11. AI Bot Integration",
+    desc: "Introduce smart chasing AI bots. Test AI bot navigation as it actively tracks your position in top-down or platformer.",
+    steps: [
+      {
+        title: "Select AI Agent Bot (🤖)",
+        check: () => {
+          return state.activeBlockId === "ai_agent";
+        }
+      },
+      {
+        title: "Paint an AI Agent Bot (🤖)",
+        check: () => {
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "ai_agent") {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+      },
+      {
+        title: "Inspect properties of AI Agent Bot",
+        check: () => {
+          const activeBlock = getInspectedBlock();
+          return activeBlock && activeBlock.id === "ai_agent";
+        }
+      },
+      {
+        title: "Win Play Mode!",
+        check: () => {
+          const winBanner = document.getElementById("game-win-banner");
+          return winBanner && !winBanner.classList.contains("hidden");
+        }
+      }
+    ]
+  },
+  {
+    id: "sprite_styling",
+    title: "12. Sprite Styling Studio",
+    desc: "Customize default block emojis and palette colors. Reinvent the default Ground block style under the Sprites tab.",
+    steps: [
+      {
+        title: "Open Sprites Tab",
+        check: () => {
+          const spritesContent = document.getElementById("content-sprites");
+          return spritesContent && !spritesContent.classList.contains("hidden");
+        }
+      },
+      {
+        title: "Customize Ground Block Visuals",
+        check: () => {
+          const groundBlock = DEFAULT_BLOCKS["ground"];
+          const originalGround = ORIGINAL_DEFAULT_BLOCKS["ground"];
+          return groundBlock && originalGround && (groundBlock.emoji !== originalGround.emoji || groundBlock.color !== originalGround.color);
+        }
+      },
+      {
+        title: "Paint 5 Ground Blocks",
+        check: () => {
+          let count = 0;
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "ground") {
+                count++;
+              }
+            }
+          }
+          return count >= 5;
+        }
+      },
+      {
+        title: "Win Play Mode!",
+        check: () => {
+          const winBanner = document.getElementById("game-win-banner");
+          return winBanner && !winBanner.classList.contains("hidden");
+        }
+      }
+    ]
   }
 ];
 
@@ -411,11 +705,15 @@ function generateProceduralTutorial() {
     }
   };
 
-  // Inject or overwrite into standard TUTORIALS array (keeping the first 5 standard, and appending/replacing at index 5)
-  TUTORIALS[5] = proceduralTutorial;
+  // Find or append the procedural tutorial in the TUTORIALS array
+  let procIdx = TUTORIALS.findIndex(t => t.id.startsWith("procedural_"));
+  if (procIdx === -1) {
+    procIdx = TUTORIALS.length;
+  }
+  TUTORIALS[procIdx] = proceduralTutorial;
 
   // Execute selecting this generated tutorial
-  selectTutorial(5);
+  selectTutorial(procIdx);
 }
 
 function setupTutorialEventListeners() {
@@ -584,8 +882,89 @@ function selectTutorial(idx) {
       state.grid[6][c] = g("stone");
     }
   } else if (idx === 5) {
+    // Enemy Patrol & Combat
+    state.genre = "platformer";
+    state.gravity = 0.5;
+    state.speed = 4.0;
+    const g = getBlockById;
+    for (let c = 0; c < 30; c++) {
+      state.grid[15][c] = g("ground");
+    }
+    state.grid[14][2] = g("player_spawn");
+    state.grid[14][28] = g("portal");
+    // Pre-place platform for enemies
+    for (let c = 12; c < 18; c++) {
+      state.grid[11][c] = g("brick");
+    }
+  } else if (idx === 6) {
+    // Interactive Speed Pads
+    state.genre = "platformer";
+    state.gravity = 0.5;
+    state.speed = 4.0;
+    const g = getBlockById;
+    for (let c = 0; c < 30; c++) {
+      state.grid[15][c] = g("ground");
+    }
+    state.grid[14][2] = g("player_spawn");
+    state.grid[10][28] = g("portal");
+    // Higher ledge
+    for (let c = 26; c < 30; c++) {
+      state.grid[11][c] = g("stone");
+    }
+  } else if (idx === 7) {
+    // Treasure Hunt
+    state.genre = "topdown";
+    state.gravity = 0;
+    state.speed = 4.0;
+    const g = getBlockById;
+    for (let c = 0; c < 30; c++) {
+      state.grid[0][c] = g("brick");
+      state.grid[15][c] = g("brick");
+    }
+    state.grid[1][28] = g("portal");
+  } else if (idx === 8) {
+    // Custom Block Designer
+    state.genre = "platformer";
+    state.gravity = 0.5;
+    state.speed = 4.0;
+    const g = getBlockById;
+    for (let c = 0; c < 30; c++) {
+      state.grid[15][c] = g("ground");
+    }
+    state.grid[14][2] = g("player_spawn");
+    state.grid[14][28] = g("portal");
+  } else if (idx === 9) {
+    // Gravity & Speed Sandbox
+    state.genre = "platformer";
+    state.gravity = 0.5;
+    state.speed = 4.0;
+    const g = getBlockById;
+    for (let c = 0; c < 30; c++) {
+      state.grid[15][c] = g("ground");
+    }
+    state.grid[14][28] = g("portal");
+  } else if (idx === 10) {
+    // AI Bot Integration
+    state.genre = "platformer";
+    state.gravity = 0.5;
+    state.speed = 4.0;
+    const g = getBlockById;
+    for (let c = 0; c < 30; c++) {
+      state.grid[15][c] = g("ground");
+    }
+    state.grid[14][2] = g("player_spawn");
+    state.grid[14][28] = g("portal");
+  } else if (idx === 11) {
+    // Sprite Styling Studio
+    state.genre = "platformer";
+    state.gravity = 0.5;
+    state.speed = 4.0;
+    const g = getBlockById;
+    state.grid[14][2] = g("player_spawn");
+    state.grid[14][28] = g("portal");
+  } else if (TUTORIALS[idx] && TUTORIALS[idx].proceduralConfig) {
     // PROCEDURAL GENERATED SETUP
-    const config = TUTORIALS[5].proceduralConfig;
+    const config = TUTORIALS[idx].proceduralConfig;
     const g = getBlockById;
     const rand = config.rand;
 
@@ -712,11 +1091,76 @@ function checkTutorialProgress() {
   }
 }
 
+function getDifficultyBadge(idx) {
+  const difficulties = [
+    { label: "Intro", bg: "bg-purple-950", text: "text-purple-300" },          // 1. Drawing Basics
+    { label: "Intermediate", bg: "bg-amber-950", text: "text-amber-300" },     // 2. Hazards & Goals
+    { label: "Advanced", bg: "bg-emerald-950", text: "text-emerald-300" },     // 3. Keys & Locked Doors
+    { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" },       // 4. Top-Down Maze Raider
+    { label: "Expert", bg: "bg-amber-950", text: "text-amber-300" },           // 5. Bouncy Mushroom Playground
+    { label: "Intermediate", bg: "bg-amber-950", text: "text-amber-300" },     // 6. Enemy Patrol & Combat
+    { label: "Intermediate", bg: "bg-amber-950", text: "text-amber-300" },     // 7. Interactive Speed Pads
+    { label: "Advanced", bg: "bg-emerald-950", text: "text-emerald-300" },     // 8. Treasure Hunt
+    { label: "Expert", bg: "bg-amber-950", text: "text-amber-300" },           // 9. Custom Block Designer
+    { label: "Advanced", bg: "bg-emerald-950", text: "text-emerald-300" },     // 10. Gravity & Speed Sandbox
+    { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" },       // 11. AI Bot Integration
+    { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" }        // 12. Sprite Styling Studio
+  ];
+  return difficulties[idx] || { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" };
+}
+
+function getTutorialEmoji(idx) {
+  const emojis = ["🎨", "🔥", "🔑", "🧱", "🍄", "👾", "🍄", "🪙", "🛠️", "🪐", "🤖", "🎨"];
+  return emojis[idx] || "📚";
+}
+
+function renderAcademyTutorials() {
+  const container = document.getElementById("tutorials-academy-tab");
+  if (!container) return;
+
+  // We only render the standard tutorials in the Academy tab.
+  // Standard tutorials are everything in TUTORIALS except any procedural tutorial that might have been dynamically appended/injected.
+  const standards = TUTORIALS.filter(t => !t.id.startsWith("procedural_"));
+
+  // Clear and add description
+  container.innerHTML = `
+    <p class="text-xs text-gray-400 leading-relaxed font-sans mb-1">
+      Learn how to build, test, and program retro games step-by-step with real-time feedback and validation checklists!
+    </p>
+  `;
+
+  standards.forEach((t, idx) => {
+    const badge = getDifficultyBadge(idx);
+    const emoji = getTutorialEmoji(idx);
+
+    const card = document.createElement("div");
+    card.className = "bg-gray-950 p-4 border border-gray-800 hover:border-purple-500/50 rounded-xl transition cursor-pointer flex items-start space-x-3.5";
+    card.setAttribute("onclick", `selectTutorial(${idx})`);
+
+    card.innerHTML = `
+      <div class="bg-purple-950/50 p-2.5 rounded-lg border border-purple-900/50 flex items-center justify-center text-xl text-purple-400">
+        ${emoji}
+      </div>
+      <div class="flex-1">
+        <h4 class="font-bold text-sm text-white flex items-center justify-between">
+          <span>${t.title}</span>
+          <span class="text-[9px] font-mono font-bold ${badge.bg} ${badge.text} px-1.5 py-0.5 rounded uppercase">${badge.label}</span>
+        </h4>
+        <p class="text-[11px] text-gray-400 mt-1 leading-normal">${t.desc}</p>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
 // Attach setup to window load
 window.addEventListener("DOMContentLoaded", () => {
   setupTutorialEventListeners();
+  renderAcademyTutorials();
 });
 
 // Expose globally
 window.selectTutorial = selectTutorial;
 window.checkTutorialProgress = checkTutorialProgress;
+window.renderAcademyTutorials = renderAcademyTutorials;
