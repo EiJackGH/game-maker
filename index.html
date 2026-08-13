@@ -576,6 +576,9 @@
         <button id="tab-logic" class="flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none relative">
           <i class="fas fa-network-wired mr-1"></i>Scripts<span id="badge-logic" class="hidden absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
         </button>
+        <button id="tab-sprites" class="flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none" title="Sprites Palette & Editor">
+          <i class="fas fa-palette mr-1 text-purple-400"></i>Sprites
+        </button>
         <button id="tab-ai-copilot" class="flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none" title="AI Assistant Copilot">
           <i class="fas fa-robot mr-1 text-purple-400"></i>AI Copilot
         </button>
@@ -586,6 +589,87 @@
 
       <!-- Panel Body Container -->
       <div class="flex-1 overflow-y-auto p-4 space-y-5">
+
+        <!-- TAB Content: Sprites Manager -->
+        <div id="content-sprites" class="hidden space-y-4">
+          <div class="bg-purple-950/40 p-3 border border-purple-900/50 rounded-lg">
+            <h3 class="text-xs font-bold text-purple-300 mb-1 flex items-center space-x-1.5">
+              <i class="fas fa-palette"></i>
+              <span>Sprites Manager</span>
+            </h3>
+            <p class="text-[10px] text-purple-200/80 leading-relaxed font-mono">Select and customize the visual appearance of default and custom blocks!</p>
+          </div>
+
+          <!-- Sprite Cards List -->
+          <div class="space-y-2">
+            <h4 class="text-[10px] uppercase font-bold text-gray-500 font-mono">Available Sprites</h4>
+            <div id="sprites-list" class="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto p-1 bg-gray-950 rounded-lg border border-gray-850">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Sprite Customization Card -->
+          <div id="sprite-edit-panel" class="hidden bg-gray-950 p-3 border border-gray-800 rounded-lg space-y-3">
+            <div class="flex items-center space-x-2.5">
+              <div id="sprite-edit-preview" class="w-10 h-10 rounded bg-purple-950 border border-purple-700/50 flex items-center justify-center text-xl">
+                🧱
+              </div>
+              <div class="flex-1 min-w-0">
+                <h5 id="sprite-edit-title" class="font-bold text-xs text-white truncate">Ground Block</h5>
+                <p id="sprite-edit-subtitle" class="text-[9px] text-purple-400 font-mono font-bold">SOLID</p>
+              </div>
+            </div>
+
+            <!-- Choose Emoji -->
+            <div class="space-y-1">
+              <label class="text-[9px] uppercase font-bold text-gray-500 font-mono block">Sprite Emoji / Visual representation</label>
+              <div class="flex space-x-1.5">
+                <select id="sprite-emoji-quick-select" class="bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-xs text-gray-300 focus:outline-none focus:border-purple-500">
+                  <option value="">Quick Select...</option>
+                  <option value="🧱">🧱 Brick/Ground</option>
+                  <option value="🪨">🪨 Stone</option>
+                  <option value="🌳">🌳 Tree</option>
+                  <option value="🔥">🔥 Lava/Fire</option>
+                  <option value="⚠️">⚠️ Hazard Spikes</option>
+                  <option value="🪙">🪙 Coin</option>
+                  <option value="💎">💎 Ruby Gem</option>
+                  <option value="🔑">🔑 Key</option>
+                  <option value="🔒">🔒 Locked Door</option>
+                  <option value="🌀">🌀 Goal Portal</option>
+                  <option value="🧙">🧙 Player Wizard</option>
+                  <option value="👾">👾 Goblin Enemy</option>
+                  <option value="🍄">🍄 Bouncy Mushroom</option>
+                  <option value="🤖">🤖 Robot Bot</option>
+                  <option value="⭐">⭐ Star</option>
+                  <option value="🌸">🌸 Flower</option>
+                  <option value="💀">💀 Skull</option>
+                  <option value="📦">📦 Box/Chest</option>
+                  <option value="🧪">🧪 Potion</option>
+                  <option value="🛡️">🛡️ Shield</option>
+                  <option value="⚔️">⚔️ Swords</option>
+                  <option value="👻">👻 Ghost</option>
+                  <option value="🦇">🦇 Bat</option>
+                </select>
+                <input type="text" id="sprite-emoji-custom-input" class="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-center text-white focus:outline-none focus:border-purple-500 font-mono" placeholder="Custom emoji" maxlength="4" />
+              </div>
+            </div>
+
+            <!-- Choose Color -->
+            <div class="space-y-1">
+              <label class="text-[9px] uppercase font-bold text-gray-500 font-mono block">Palette Base Color</label>
+              <div class="flex items-center space-x-2 bg-gray-900 border border-gray-700 rounded p-1.5">
+                <input type="color" id="sprite-color-input" class="w-6 h-6 border-0 bg-transparent rounded cursor-pointer" />
+                <span id="sprite-color-lbl" class="text-[10px] font-mono text-gray-400">#4F46E5</span>
+              </div>
+            </div>
+
+            <!-- Apply Changes -->
+            <button id="btn-sprite-apply" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-1.5 rounded text-[10px] transition flex items-center justify-center space-x-1.5 shadow">
+              <i class="fas fa-check-circle"></i>
+              <span>Apply Visual Changes</span>
+            </button>
+          </div>
+        </div>
 
         <!-- TAB Content: Files Manager -->
         <div id="content-files" class="hidden space-y-4">

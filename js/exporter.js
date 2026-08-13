@@ -9,6 +9,9 @@ function generateStandaloneBundle() {
   const currentGridJSON = JSON.stringify(state.grid);
   const customBlocksJSON = JSON.stringify(state.customBlocks);
 
+  // Sync modified default blocks configurations with exported standalone game DEFAULT_BLOCKS
+  const exportedDefaultBlocks = JSON.stringify(DEFAULT_BLOCKS);
+
   // HTML shell boilerplate ready to self-execute instantly when loaded as a GitHub Pages web deployment
   const bundle = `<!DOCTYPE html>
 <html lang="en">
@@ -116,7 +119,7 @@ function generateStandaloneBundle() {
 
   <!-- BUNDLED JAVASCRIPT GAME RUNTIME PAYLOAD -->
   <script>
-    const DEFAULT_BLOCKS = ${JSON.stringify(DEFAULT_BLOCKS)};
+    const DEFAULT_BLOCKS = ${exportedDefaultBlocks};
     const state = {
       cols: ${state.cols},
       rows: ${state.rows},

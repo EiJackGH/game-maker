@@ -229,6 +229,9 @@ function loadSavedFile(id) {
   state.genre = file.genre || "platformer";
   state.mobileMode = file.mobileMode !== undefined ? file.mobileMode : false;
 
+  // Restore modified default block visuals if available in the file
+  applyDefaultBlockVisuals(file.defaultBlockVisuals);
+
   state.currentFileId = id;
   state.currentFileName = file.name;
 
@@ -268,6 +271,7 @@ function createSavedFile(name) {
     lives: state.lives,
     genre: state.genre,
     mobileMode: state.mobileMode,
+    defaultBlockVisuals: getDefaultBlockVisuals(),
     createdAt: Date.now(),
     updatedAt: Date.now()
   };
@@ -380,6 +384,45 @@ function loadSessionMetadata() {
   }
 }
 
+// Helper to extract default block custom visuals
+function getDefaultBlockVisuals() {
+  const visuals = {};
+  Object.keys(DEFAULT_BLOCKS).forEach(id => {
+    if (ORIGINAL_DEFAULT_BLOCKS[id]) {
+      const isEmojiChanged = DEFAULT_BLOCKS[id].emoji !== ORIGINAL_DEFAULT_BLOCKS[id].emoji;
+      const isColorChanged = DEFAULT_BLOCKS[id].color !== ORIGINAL_DEFAULT_BLOCKS[id].color;
+      if (isEmojiChanged || isColorChanged) {
+        visuals[id] = {
+          emoji: DEFAULT_BLOCKS[id].emoji,
+          color: DEFAULT_BLOCKS[id].color
+        };
+      }
+    }
+  });
+  return visuals;
+}
+
+// Helper to apply default block custom visuals
+function applyDefaultBlockVisuals(visuals) {
+  // Always start by resetting default blocks to original settings
+  Object.keys(DEFAULT_BLOCKS).forEach(id => {
+    if (ORIGINAL_DEFAULT_BLOCKS[id]) {
+      DEFAULT_BLOCKS[id].emoji = ORIGINAL_DEFAULT_BLOCKS[id].emoji;
+      DEFAULT_BLOCKS[id].color = ORIGINAL_DEFAULT_BLOCKS[id].color;
+    }
+  });
+
+  // Apply customizations if present
+  if (visuals) {
+    Object.keys(visuals).forEach(id => {
+      if (DEFAULT_BLOCKS[id]) {
+        DEFAULT_BLOCKS[id].emoji = visuals[id].emoji;
+        DEFAULT_BLOCKS[id].color = visuals[id].color;
+      }
+    });
+  }
+}
+
 // Save & Load to/from LocalStorage
 function saveToLocalStorage() {
   const data = {
@@ -391,7 +434,8 @@ function saveToLocalStorage() {
     speed: state.speed,
     lives: state.lives,
     genre: state.genre,
-    mobileMode: state.mobileMode
+    mobileMode: state.mobileMode,
+    defaultBlockVisuals: getDefaultBlockVisuals()
   };
   localStorage.setItem("blocks_game_maker_data", JSON.stringify(data));
   saveSessionMetadataOnly();
@@ -409,6 +453,7 @@ function saveToLocalStorage() {
       files[state.currentFileId].lives = state.lives;
       files[state.currentFileId].genre = state.genre;
       files[state.currentFileId].mobileMode = state.mobileMode;
+      files[state.currentFileId].defaultBlockVisuals = getDefaultBlockVisuals();
       files[state.currentFileId].updatedAt = Date.now();
       saveSavedFiles(files);
     }
@@ -434,6 +479,9 @@ function loadFromLocalStorage() {
       state.genre = parsed.genre || "platformer";
       state.mobileMode = parsed.mobileMode !== undefined ? parsed.mobileMode : false;
       state.grid = parsed.grid || [];
+
+      // Apply default block visual modifications if saved
+      applyDefaultBlockVisuals(parsed.defaultBlockVisuals);
 
       // Validate/resize level grid array
       adjustGridDimensions();
@@ -1424,6 +1472,9 @@ function setupEventListeners() {
   document.getElementById("tab-logic").addEventListener("click", () => {
     toggleRightPanelTab("logic");
   });
+  document.getElementById("tab-sprites").addEventListener("click", () => {
+    toggleRightPanelTab("sprites");
+  });
   document.getElementById("tab-ai-copilot").addEventListener("click", () => {
     toggleRightPanelTab("ai-copilot");
   });
@@ -1497,6 +1548,7 @@ function setupEventListeners() {
           lives: parsed.lives || 3,
           genre: parsed.genre || "platformer",
         mobileMode: parsed.mobileMode !== undefined ? parsed.mobileMode : false,
+          defaultBlockVisuals: parsed.defaultBlockVisuals || {},
           createdAt: Date.now(),
           updatedAt: Date.now()
         };
@@ -1637,7 +1689,8 @@ function setupEventListeners() {
       gravity: state.gravity,
       speed: state.speed,
       lives: state.lives,
-      genre: state.genre
+      genre: state.genre,
+      defaultBlockVisuals: getDefaultBlockVisuals()
     }, null, 2));
     const dlAnchorElem = document.createElement('a');
     dlAnchorElem.setAttribute("href", dataStr);
@@ -1665,6 +1718,9 @@ function setupEventListeners() {
         state.genre = parsed.genre || "platformer";
         state.mobileMode = parsed.mobileMode !== undefined ? parsed.mobileMode : false;
         state.grid = parsed.grid || [];
+
+        // Apply imported default block visual modifications if any
+        applyDefaultBlockVisuals(parsed.defaultBlockVisuals);
 
         adjustGridDimensions();
         syncFormControls();
@@ -1743,6 +1799,70 @@ function setupEventListeners() {
 
   // Bind Virtual Touch Controls
   setupVirtualControlListeners();
+
+  // Sprites Tab Interactive Elements Listeners
+  const quickSelect = document.getElementById("sprite-emoji-quick-select");
+  if (quickSelect) {
+    quickSelect.addEventListener("change", (e) => {
+      const val = e.target.value;
+      if (val) {
+        document.getElementById("sprite-emoji-custom-input").value = val;
+      }
+    });
+  }
+
+  const colorInput = document.getElementById("sprite-color-input");
+  if (colorInput) {
+    colorInput.addEventListener("input", (e) => {
+      document.getElementById("sprite-color-lbl").textContent = e.target.value.toUpperCase();
+    });
+  }
+
+  const btnApply = document.getElementById("btn-sprite-apply");
+  if (btnApply) {
+    btnApply.addEventListener("click", () => {
+      applySpriteVisualChanges();
+    });
+  }
+}
+
+function applySpriteVisualChanges() {
+  const id = state.selectedSpriteId;
+  if (!id) return;
+
+  const emoji = document.getElementById("sprite-emoji-custom-input").value.trim() || "🧱";
+  const color = document.getElementById("sprite-color-input").value;
+
+  // 1. Mutate blocks configurations in memory
+  if (DEFAULT_BLOCKS[id]) {
+    DEFAULT_BLOCKS[id].emoji = emoji;
+    DEFAULT_BLOCKS[id].color = color;
+  } else if (state.customBlocks[id]) {
+    state.customBlocks[id].emoji = emoji;
+    state.customBlocks[id].color = color;
+  }
+
+  // 2. Scan state.grid and mutate any matching placed block instance
+  for (let r = 0; r < state.rows; r++) {
+    for (let c = 0; c < state.cols; c++) {
+      if (state.grid[r][c] && state.grid[r][c].id === id) {
+        state.grid[r][c].emoji = emoji;
+        state.grid[r][c].color = color;
+      }
+    }
+  }
+
+  // 3. Rebuild palettes, save changes, and redraw grid
+  buildPalettes();
+  saveToLocalStorage();
+  renderGrid();
+
+  // Refresh Sprites Tab UI preview
+  selectSpriteForEditing(id);
+
+  if (typeof validateScriptsAndLevel === "function") {
+    validateScriptsAndLevel();
+  }
 }
 
 function setupVirtualControlListeners() {
@@ -2007,6 +2127,9 @@ function loadTemplate(templateId) {
   const tmpl = TEMPLATES[templateId];
   if (!tmpl) return;
 
+  // Reset default blocks to original settings before loading a template
+  applyDefaultBlockVisuals(null);
+
   state.cols = tmpl.cols;
   state.rows = tmpl.rows;
   state.genre = tmpl.genre;
@@ -2053,20 +2176,22 @@ function closeCustomBlockModal() {
 function toggleRightPanelTab(tabName) {
   const tabProp = document.getElementById("tab-properties");
   const tabLogic = document.getElementById("tab-logic");
+  const tabSprites = document.getElementById("tab-sprites");
   const tabAi = document.getElementById("tab-ai-copilot");
   const tabFiles = document.getElementById("tab-files");
   const contentProp = document.getElementById("content-properties");
   const contentLogic = document.getElementById("content-logic");
+  const contentSprites = document.getElementById("content-sprites");
   const contentAi = document.getElementById("content-ai-copilot");
   const contentFiles = document.getElementById("content-files");
 
   // Reset styles
-  [tabProp, tabLogic, tabAi, tabFiles].forEach(t => {
+  [tabProp, tabLogic, tabSprites, tabAi, tabFiles].forEach(t => {
     if (t) {
       t.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-transparent text-gray-400 hover:text-white hover:bg-gray-900/50 focus:outline-none";
     }
   });
-  [contentProp, contentLogic, contentAi, contentFiles].forEach(c => {
+  [contentProp, contentLogic, contentSprites, contentAi, contentFiles].forEach(c => {
     if (c) c.classList.add("hidden");
   });
 
@@ -2076,6 +2201,10 @@ function toggleRightPanelTab(tabName) {
   } else if (tabName === "logic") {
     tabLogic.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
     contentLogic.classList.remove("hidden");
+  } else if (tabName === "sprites") {
+    tabSprites.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
+    contentSprites.classList.remove("hidden");
+    renderSpritesTab();
   } else if (tabName === "ai-copilot") {
     tabAi.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
     contentAi.classList.remove("hidden");
@@ -2083,6 +2212,57 @@ function toggleRightPanelTab(tabName) {
     if (tabFiles) tabFiles.className = "flex-1 py-2 text-center text-[10px] font-bold border-b-2 border-purple-500 text-purple-400 bg-gray-900 focus:outline-none";
     if (contentFiles) contentFiles.classList.remove("hidden");
   }
+}
+
+// Render the Sprites list inside Sprites tab
+function renderSpritesTab() {
+  const container = document.getElementById("sprites-list");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const allBlocks = { ...DEFAULT_BLOCKS, ...state.customBlocks };
+  Object.values(allBlocks).forEach(block => {
+    const card = document.createElement("button");
+    card.className = "flex flex-col items-center justify-center p-2 rounded-lg bg-gray-900 border hover:border-purple-500 transition space-y-1";
+    card.style.borderColor = state.selectedSpriteId === block.id ? "#a855f7" : "#1f2937";
+    if (state.selectedSpriteId === block.id) {
+      card.classList.add("ring-1", "ring-purple-500/50");
+    }
+
+    card.innerHTML = `
+      <span class="text-xl">${block.emoji || "🧱"}</span>
+      <span class="text-[9px] font-mono text-gray-400 truncate max-w-full" style="color: ${block.color}">${block.name}</span>
+    `;
+
+    card.addEventListener("click", () => {
+      selectSpriteForEditing(block.id);
+    });
+
+    container.appendChild(card);
+  });
+}
+
+function selectSpriteForEditing(id) {
+  state.selectedSpriteId = id;
+  renderSpritesTab();
+
+  const block = getBlockById(id);
+  if (!block) return;
+
+  const editPanel = document.getElementById("sprite-edit-panel");
+  editPanel.classList.remove("hidden");
+
+  document.getElementById("sprite-edit-preview").textContent = block.emoji || "🧱";
+  document.getElementById("sprite-edit-preview").style.backgroundColor = block.color + "22";
+  document.getElementById("sprite-edit-preview").style.borderColor = block.color;
+  document.getElementById("sprite-edit-title").textContent = block.name;
+  document.getElementById("sprite-edit-subtitle").textContent = block.category.toUpperCase();
+
+  document.getElementById("sprite-emoji-quick-select").value = "";
+  document.getElementById("sprite-emoji-custom-input").value = block.emoji || "";
+  document.getElementById("sprite-color-input").value = block.color;
+  document.getElementById("sprite-color-lbl").textContent = block.color.toUpperCase();
 }
 
 // Helper to print in the AI console log
