@@ -827,6 +827,11 @@ function selectTutorial(idx) {
     helper.classList.add("translate-y-0");
   }
 
+  // Set standard grid size for tutorials to prevent out of bounds crash and misalignment
+  state.cols = 30;
+  state.rows = 16;
+  adjustGridDimensions();
+
   // Clear level and setup context depending on selected tutorial
   resetGridToEmpty();
 
@@ -996,6 +1001,12 @@ function selectTutorial(idx) {
       state.grid[1][28] = g("portal");
     }
   }
+
+  // Reset zoom, pan, and canvas size after setup is complete
+  state.zoom = getFitZoom();
+  state.panX = 0;
+  state.panY = 0;
+  resizeCanvas();
 
   syncFormControls();
   renderGrid();
