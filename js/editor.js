@@ -40,7 +40,10 @@ const state = {
 
   // File Manager State
   currentFileId: null, // unique file ID if loaded/saved, e.g. "file_xxxxxx"
-  currentFileName: ""  // user-visible name
+  currentFileName: "", // user-visible name
+
+  // High-volume error simulation
+  simulatedMillionsOfErrorsCount: 0
 };
 
 const ORIGINAL_DEFAULT_BLOCKS = JSON.parse(JSON.stringify(DEFAULT_BLOCKS));
@@ -1042,6 +1045,18 @@ function validateScriptsAndLevel() {
     });
   });
 
+  // Sync high-volume error simulation button UI state
+  const btnTriggerMillions = document.getElementById("btn-trigger-millions-errors");
+  if (btnTriggerMillions) {
+    if (state.simulatedMillionsOfErrorsCount > 0) {
+      btnTriggerMillions.textContent = "Clear 1M";
+      btnTriggerMillions.className = "text-[9px] bg-red-900/60 hover:bg-red-800 text-red-100 px-2 py-0.5 rounded border border-red-700 transition";
+    } else {
+      btnTriggerMillions.textContent = "Simulate 1M";
+      btnTriggerMillions.className = "text-[9px] bg-purple-900/60 hover:bg-purple-800 text-purple-100 px-2 py-0.5 rounded border border-purple-700 transition";
+    }
+  }
+
   // Render errors inside problems list UI element
   const problemsListDiv = document.getElementById("problems-list");
   const problemsCountBadge = document.getElementById("problems-count-badge");
@@ -1051,10 +1066,12 @@ function validateScriptsAndLevel() {
   if (!problemsListDiv) return;
 
   problemsListDiv.innerHTML = "";
-  problemsCountBadge.textContent = problems.length;
+
+  const totalCount = problems.length + (state.simulatedMillionsOfErrorsCount || 0);
+  problemsCountBadge.textContent = totalCount.toLocaleString();
 
   // Show/Hide badge-logic dot notification based on errors count
-  const errorCount = problems.filter(p => p.type === "error").length;
+  const errorCount = problems.filter(p => p.type === "error").length + (state.simulatedMillionsOfErrorsCount ? Math.floor(state.simulatedMillionsOfErrorsCount / 2) : 0);
   if (errorCount > 0) {
     badgeLogic.classList.remove("hidden");
   } else {
@@ -1068,12 +1085,34 @@ function validateScriptsAndLevel() {
     runtimeControls.classList.add("hidden");
   }
 
-  if (problems.length === 0) {
+  if (totalCount === 0) {
     problemsListDiv.innerHTML = `<p class="text-[11px] text-gray-500 italic font-mono">No errors or warnings found.</p>`;
     return;
   }
 
-  problems.forEach(p => {
+  // Combine real problems and simulated problems up to a total of 50
+  const displayedProblems = [...problems];
+  const simulatedCount = state.simulatedMillionsOfErrorsCount || 0;
+
+  if (displayedProblems.length < 50 && simulatedCount > 0) {
+    const remainingToRender = Math.min(50 - displayedProblems.length, simulatedCount);
+    for (let i = 0; i < remainingToRender; i++) {
+      const isError = i % 2 === 0;
+      displayedProblems.push({
+        type: isError ? "error" : "warning",
+        source: "simulation",
+        message: isError
+          ? `Simulated High-Volume Error #${i + 1}: Unexpected compilation artifact detected under extreme load.`
+          : `Simulated High-Volume Warning #${i + 1}: Memory usage optimization suggested for virtual block allocations.`,
+        isSimulated: true
+      });
+    }
+  }
+
+  const cap = 50;
+  const itemsToRender = displayedProblems.slice(0, cap);
+
+  itemsToRender.forEach((p, idx) => {
     const isError = p.type === "error";
     const bgClass = isError ? "bg-red-950/35 border-red-900/40 hover:bg-red-950/60" : "bg-yellow-950/20 border-yellow-900/30 hover:bg-yellow-950/40";
     const borderClass = "border";
@@ -1084,7 +1123,9 @@ function validateScriptsAndLevel() {
     let labelTarget = "";
     let clickHandler = "";
 
-    if (p.coordinate) {
+    if (p.isSimulated) {
+      labelTarget = `Simulated #${idx + 1}`;
+    } else if (p.coordinate) {
       labelTarget = `@ (${p.coordinate.c}, ${p.coordinate.r})`;
       clickHandler = `onclick="navigateToCoordinate(${p.coordinate.r}, ${p.coordinate.c})"`;
     } else if (p.paletteId) {
@@ -1095,7 +1136,8 @@ function validateScriptsAndLevel() {
     }
 
     const card = document.createElement("div");
-    card.className = `${bgClass} ${borderClass} rounded p-2 text-[11px] font-mono transition duration-150 cursor-pointer flex flex-col space-y-1`;
+    card.className = `${bgClass} ${borderClass} rounded p-2 text-[11px] font-mono transition duration-150 flex flex-col space-y-1`;
+
     if (clickHandler) {
       card.setAttribute("onclick", clickHandler.match(/"([^"]+)"/)[1]);
       card.style.cursor = "pointer";
@@ -1127,6 +1169,17 @@ function validateScriptsAndLevel() {
 
     problemsListDiv.appendChild(card);
   });
+
+  if (totalCount > cap) {
+    const truncatedCount = totalCount - cap;
+    const truncationCard = document.createElement("div");
+    truncationCard.className = "bg-purple-950/20 border border-purple-900/30 rounded p-2 text-[11px] font-mono text-purple-300 text-center";
+    truncationCard.innerHTML = `
+      <i class="fas fa-info-circle mr-1"></i>
+      <span>...and ${truncatedCount.toLocaleString()} more errors/warnings truncated to prevent performance lag.</span>
+    `;
+    problemsListDiv.appendChild(truncationCard);
+  }
 }
 
 // Window sizing setup
@@ -1565,6 +1618,16 @@ function setupEventListeners() {
   // Clear runtime errors button
   document.getElementById("btn-clear-runtime").addEventListener("click", () => {
     state.runtimeErrors = [];
+    validateScriptsAndLevel();
+  });
+
+  // Trigger simulated millions of errors button
+  document.getElementById("btn-trigger-millions-errors").addEventListener("click", () => {
+    if (state.simulatedMillionsOfErrorsCount > 0) {
+      state.simulatedMillionsOfErrorsCount = 0;
+    } else {
+      state.simulatedMillionsOfErrorsCount = 1000000;
+    }
     validateScriptsAndLevel();
   });
 

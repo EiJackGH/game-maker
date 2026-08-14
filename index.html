@@ -789,6 +789,13 @@ game.addCoins(5);"></textarea>
               <span id="problems-count-badge" class="text-[10px] bg-red-950 text-red-300 px-2 py-0.5 rounded-full border border-red-800 font-mono font-bold">0</span>
             </h4>
 
+            <div class="flex items-center justify-between text-[10px] bg-purple-950/40 border border-purple-900/50 p-2 rounded">
+              <span class="text-purple-300 font-mono flex items-center"><i class="fas fa-bolt mr-1"></i>High-volume simulation</span>
+              <button id="btn-trigger-millions-errors" class="text-[9px] bg-purple-900/60 hover:bg-purple-800 text-purple-100 px-2 py-0.5 rounded border border-purple-700 transition">
+                Simulate 1M
+              </button>
+            </div>
+
             <div id="runtime-error-controls" class="hidden flex items-center justify-between text-[10px] bg-red-950/40 border border-red-900/50 p-2 rounded">
               <span class="text-red-300 font-mono flex items-center"><i class="fas fa-bug mr-1"></i>Runtime exceptions caught</span>
               <button id="btn-clear-runtime" class="text-[9px] bg-red-900/60 hover:bg-red-800 text-red-100 px-2 py-0.5 rounded border border-red-700 transition">
