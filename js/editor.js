@@ -903,7 +903,7 @@ window.navigateToPaletteBlock = function(id) {
 
 // Real-time Static Analysis & Level Validation Engine
 function validateScriptsAndLevel() {
-  const problems = [];
+  const rawProblems = [];
 
   let playerSpawnsCount = 0;
   let portalsCount = 0;
@@ -937,31 +937,166 @@ function validateScriptsAndLevel() {
           try {
             new Function("player", "tile", "game", "sound", tile.js);
           } catch (err) {
-            problems.push({
+            rawProblems.push({
               type: "error",
               source: "code",
               message: `Syntax error in tile custom JS: ${err.message}`,
               coordinate: { r, c },
               tileId: tile.id,
-              tileName: tile.name
+              tileName: tile.name,
+              group: "tile_js_syntax_error",
+              groupName: "Tile Custom JS Syntax Errors"
+            });
+          }
+
+          // Check if custom JS is empty (comments/spaces only)
+          const codeWithoutComments = tile.js.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').trim();
+          if (codeWithoutComments.length === 0) {
+            rawProblems.push({
+              type: "warning",
+              source: "code",
+              message: `Custom JS for tile "${tile.name}" contains no executable code (only spaces or comments).`,
+              coordinate: { r, c },
+              tileId: tile.id,
+              tileName: tile.name,
+              group: "empty_js",
+              groupName: "Empty Custom JS"
             });
           }
         }
 
-        // 2. Warn if tile script triggers are set but missing actions
+        // 2. Warn if tile script triggers are set but missing actions, or have invalid params
         if (tile.scripts) {
           tile.scripts.forEach((script, idx) => {
             if (!script.action) {
-              problems.push({
+              rawProblems.push({
                 type: "warning",
                 source: "script",
                 message: `Script #${idx+1} is missing an action`,
                 coordinate: { r, c },
                 tileId: tile.id,
-                tileName: tile.name
+                tileName: tile.name,
+                group: "missing_action",
+                groupName: "Scripts Missing Actions"
               });
+            } else if (script.action === "bounce_player") {
+              const strength = script.params && script.params.strength;
+              if (strength !== undefined && (isNaN(strength) || strength < 1 || strength > 20)) {
+                rawProblems.push({
+                  type: "warning",
+                  source: "script",
+                  message: `Bounce strength parameter (${strength}) in script #${idx+1} is out of the safe 1-20 range.`,
+                  coordinate: { r, c },
+                  tileId: tile.id,
+                  tileName: tile.name,
+                  group: "invalid_script_param",
+                  groupName: "Invalid Script Parameters"
+                });
+              }
             }
           });
+        }
+
+        // Check if collectible is marked solid
+        if (tile.category === "collectible" && tile.solid) {
+          rawProblems.push({
+            type: "error",
+            source: "level",
+            message: `Collectible block "${tile.name}" is marked as solid, which may block the player.`,
+            coordinate: { r, c },
+            tileId: tile.id,
+            tileName: tile.name,
+            group: "solid_collectible",
+            groupName: "Solid Collectibles"
+          });
+        }
+
+        // Floating Player Spawn check
+        if (tile.id === "player_spawn" && state.genre === "platformer") {
+          let hasSolidBeneath = false;
+          if (r + 1 < state.rows) {
+            const beneathTile = state.grid[r + 1][c];
+            if (beneathTile && beneathTile.solid) {
+              hasSolidBeneath = true;
+            }
+          }
+          if (!hasSolidBeneath) {
+            rawProblems.push({
+              type: "warning",
+              source: "level",
+              message: "Player Spawn is floating in mid-air. The player will fall instantly on start.",
+              coordinate: { r, c },
+              tileId: tile.id,
+              tileName: tile.name,
+              group: "floating_spawn",
+              groupName: "Floating Player Spawns"
+            });
+          }
+        }
+
+        // Spawn adjacent to hazard or enemy actor check
+        if (tile.id === "player_spawn") {
+          const neighbors = [
+            [r - 1, c],
+            [r + 1, c],
+            [r, c - 1],
+            [r, c + 1]
+          ];
+          let nearDanger = false;
+          let dangerTileName = "";
+          for (const [nr, nc] of neighbors) {
+            if (nr >= 0 && nr < state.rows && nc >= 0 && nc < state.cols) {
+              const neighborTile = state.grid[nr][nc];
+              if (neighborTile && (neighborTile.category === "hazard" || neighborTile.id === "patrol_enemy" || neighborTile.id === "ai_agent")) {
+                nearDanger = true;
+                dangerTileName = neighborTile.name;
+                break;
+              }
+            }
+          }
+          if (nearDanger) {
+            rawProblems.push({
+              type: "warning",
+              source: "level",
+              message: `Player Spawn is placed directly adjacent to hazard/enemy "${dangerTileName}". This may cause immediate damage/death on start.`,
+              coordinate: { r, c },
+              tileId: tile.id,
+              tileName: tile.name,
+              group: "spawn_near_hazard",
+              groupName: "Spawns Near Hazards/Enemies"
+            });
+          }
+        }
+
+        // Trapped/Boxed in Player Spawn (top-down mode)
+        if (tile.id === "player_spawn" && state.genre === "topdown") {
+          const neighbors = [
+            [r - 1, c],
+            [r + 1, c],
+            [r, c - 1],
+            [r, c + 1]
+          ];
+          let openCount = 0;
+          neighbors.forEach(([nr, nc]) => {
+            if (nr >= 0 && nr < state.rows && nc >= 0 && nc < state.cols) {
+              const neighborTile = state.grid[nr][nc];
+              if (!neighborTile || !neighborTile.solid) {
+                openCount++;
+              }
+            }
+          });
+          if (openCount === 0) {
+            rawProblems.push({
+              type: "warning",
+              source: "level",
+              message: "Player Spawn is completely trapped/boxed in by solid blocks. The player will be unable to move.",
+              coordinate: { r, c },
+              tileId: tile.id,
+              tileName: tile.name,
+              group: "spawn_trapped",
+              groupName: "Trapped Player Spawns"
+            });
+          }
         }
       }
     }
@@ -970,16 +1105,60 @@ function validateScriptsAndLevel() {
   // Scan Custom Palette Blocks for JS syntax errors too
   Object.keys(state.customBlocks).forEach(id => {
     const block = state.customBlocks[id];
-    if (block && block.js && block.js.trim().length > 0) {
-      try {
-        new Function("player", "tile", "game", "sound", block.js);
-      } catch (err) {
-        problems.push({
-          type: "error",
-          source: "code",
-          message: `Syntax error in Custom Palette Block [${block.name}] JS: ${err.message}`,
-          paletteId: id,
-          tileName: block.name
+    if (block) {
+      if (block.js && block.js.trim().length > 0) {
+        try {
+          new Function("player", "tile", "game", "sound", block.js);
+        } catch (err) {
+          rawProblems.push({
+            type: "error",
+            source: "code",
+            message: `Syntax error in Custom Palette Block [${block.name}] JS: ${err.message}`,
+            paletteId: id,
+            tileName: block.name,
+            group: "palette_js_syntax_error",
+            groupName: "Custom Palette Block Syntax Errors"
+          });
+        }
+        const codeWithoutComments = block.js.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').trim();
+        if (codeWithoutComments.length === 0) {
+          rawProblems.push({
+            type: "warning",
+            source: "code",
+            message: `Custom JS for Palette Block [${block.name}] contains no executable code.`,
+            paletteId: id,
+            tileName: block.name,
+            group: "empty_js",
+            groupName: "Empty Custom JS"
+          });
+        }
+      }
+      if (block.scripts) {
+        block.scripts.forEach((script, idx) => {
+          if (!script.action) {
+            rawProblems.push({
+              type: "warning",
+              source: "script",
+              message: `Palette Block [${block.name}] Script #${idx+1} is missing an action.`,
+              paletteId: id,
+              tileName: block.name,
+              group: "missing_action",
+              groupName: "Scripts Missing Actions"
+            });
+          } else if (script.action === "bounce_player") {
+            const strength = script.params && script.params.strength;
+            if (strength !== undefined && (isNaN(strength) || strength < 1 || strength > 20)) {
+              rawProblems.push({
+                type: "warning",
+                source: "script",
+                message: `Palette Block [${block.name}] script #${idx+1} bounce strength (${strength}) is out of safe 1-20 range.`,
+                paletteId: id,
+                tileName: block.name,
+                group: "invalid_script_param",
+                groupName: "Invalid Script Parameters"
+              });
+            }
+          }
         });
       }
     }
@@ -987,35 +1166,45 @@ function validateScriptsAndLevel() {
 
   // Level requirements warnings
   if (playerSpawnsCount === 0) {
-    problems.push({
+    rawProblems.push({
       type: "error",
       source: "level",
       message: "No Player Spawn found! Add exactly one 🧙 Spawn block."
     });
   } else if (playerSpawnsCount > 1) {
-    problems.push({
+    rawProblems.push({
       type: "warning",
       source: "level",
-      message: `Multiple (${playerSpawnsCount}) Player Spawns found. Only the last one will be active.`
+      message: `Multiple (${playerSpawnsCount}) Player Spawns found. Only the last one will be active.`,
+      group: "multiple_spawns",
+      groupName: "Multiple Player Spawns"
     });
   }
 
   if (portalsCount === 0) {
-    problems.push({
+    rawProblems.push({
       type: "warning",
       source: "level",
       message: "No Goal Portal (🌀) placed. Level cannot be cleared/won by the player."
     });
+  } else if (portalsCount > 1) {
+    rawProblems.push({
+      type: "warning",
+      source: "level",
+      message: `Multiple (${portalsCount}) Goal Portals found. Placing more than one portal is usually redundant.`,
+      group: "multiple_portals",
+      groupName: "Multiple Goal Portals"
+    });
   }
 
   if (hasLockedDoors && !hasKeys) {
-    problems.push({
+    rawProblems.push({
       type: "error",
       source: "level",
       message: "Locked Door (🔒) exists but no Golden Key (🔑) is available to unlock it!"
     });
   } else if (!hasLockedDoors && hasKeys) {
-    problems.push({
+    rawProblems.push({
       type: "warning",
       source: "level",
       message: "Golden Key (🔑) placed on level but no Locked Door (🔒) exists to unlock."
@@ -1023,23 +1212,78 @@ function validateScriptsAndLevel() {
   }
 
   if (state.genre === "platformer" && !hasSolids) {
-    problems.push({
+    rawProblems.push({
       type: "warning",
       source: "level",
       message: "Platformer genre is selected with gravity enabled, but no solid platform blocks are placed."
     });
   }
 
+  // Non-zero gravity in top-down mode warning
+  if (state.genre === "topdown" && state.gravity > 0) {
+    rawProblems.push({
+      type: "warning",
+      source: "level",
+      message: `Genre is set to Top-Down, but Gravity is configured to a non-zero value (${state.gravity}). This can cause unintended drift/movement issues.`,
+      group: "topdown_gravity",
+      groupName: "Top-Down Mode Gravity Configuration"
+    });
+  }
+
   // Add captured runtime errors to the list of displayed problems
   state.runtimeErrors.forEach(err => {
-    problems.push({
+    rawProblems.push({
       type: "error",
       source: "runtime",
       message: `Runtime Crash: ${err.message}`,
       coordinate: err.coordinate,
       tileName: err.tileName,
-      timestamp: err.timestamp
+      timestamp: err.timestamp,
+      group: "runtime_crash",
+      groupName: "Runtime Crashes"
     });
+  });
+
+  // Perform aggregation / grouping to enforce the "no high volume" constraint
+  const problems = [];
+  const groups = {};
+
+  rawProblems.forEach(p => {
+    if (p.group) {
+      if (!groups[p.group]) {
+        groups[p.group] = {
+          name: p.groupName || p.group,
+          items: [],
+          type: p.type || "warning"
+        };
+      }
+      if (p.type === "error") {
+        groups[p.group].type = "error";
+      }
+      groups[p.group].items.push(p);
+    } else {
+      problems.push(p);
+    }
+  });
+
+  Object.keys(groups).forEach(groupId => {
+    const group = groups[groupId];
+    const items = group.items;
+    if (items.length <= 3) {
+      items.forEach(item => problems.push(item));
+    } else {
+      // Show first 3 items in detail
+      for (let i = 0; i < 3; i++) {
+        problems.push(items[i]);
+      }
+      // Add a summary card
+      problems.push({
+        type: group.type,
+        source: items[0].source || "level",
+        message: `...and ${items.length - 3} more similar issues of type: ${group.name}`,
+        groupSummary: true
+      });
+    }
   });
 
   // Render errors inside problems list UI element
