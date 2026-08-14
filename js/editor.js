@@ -38,6 +38,9 @@ const state = {
   // Captured runtime exceptions/errors
   runtimeErrors: [],
 
+  // Simulated stress-test errors count
+  simulatedMillionsOfErrorsCount: 0,
+
   // File Manager State
   currentFileId: null, // unique file ID if loaded/saved, e.g. "file_xxxxxx"
   currentFileName: ""  // user-visible name
@@ -1051,10 +1054,13 @@ function validateScriptsAndLevel() {
   if (!problemsListDiv) return;
 
   problemsListDiv.innerHTML = "";
-  problemsCountBadge.textContent = problems.length;
+
+  // Calculate total problems (regular + millions simulated)
+  const totalProblemsCount = problems.length + (state.simulatedMillionsOfErrorsCount || 0);
+  problemsCountBadge.textContent = totalProblemsCount.toLocaleString();
 
   // Show/Hide badge-logic dot notification based on errors count
-  const errorCount = problems.filter(p => p.type === "error").length;
+  const errorCount = problems.filter(p => p.type === "error").length + (state.simulatedMillionsOfErrorsCount || 0);
   if (errorCount > 0) {
     badgeLogic.classList.remove("hidden");
   } else {
@@ -1068,12 +1074,18 @@ function validateScriptsAndLevel() {
     runtimeControls.classList.add("hidden");
   }
 
-  if (problems.length === 0) {
+  if (totalProblemsCount === 0) {
     problemsListDiv.innerHTML = `<p class="text-[11px] text-gray-500 italic font-mono">No errors or warnings found.</p>`;
     return;
   }
 
-  problems.forEach(p => {
+  // Virtualized rendering: cap rendering to maximum 50 elements for optimal performance
+  const displayLimit = 50;
+  let itemsRendered = 0;
+
+  // 1. Render actual problems up to the limit
+  for (let i = 0; i < problems.length && itemsRendered < displayLimit; i++) {
+    const p = problems[i];
     const isError = p.type === "error";
     const bgClass = isError ? "bg-red-950/35 border-red-900/40 hover:bg-red-950/60" : "bg-yellow-950/20 border-yellow-900/30 hover:bg-yellow-950/40";
     const borderClass = "border";
@@ -1086,20 +1098,15 @@ function validateScriptsAndLevel() {
 
     if (p.coordinate) {
       labelTarget = `@ (${p.coordinate.c}, ${p.coordinate.r})`;
-      clickHandler = `onclick="navigateToCoordinate(${p.coordinate.r}, ${p.coordinate.c})"`;
     } else if (p.paletteId) {
       labelTarget = `Palette: ${p.tileName}`;
-      clickHandler = `onclick="navigateToPaletteBlock('${p.paletteId}')"`;
     } else {
       labelTarget = "Global";
     }
 
     const card = document.createElement("div");
-    card.className = `${bgClass} ${borderClass} rounded p-2 text-[11px] font-mono transition duration-150 cursor-pointer flex flex-col space-y-1`;
-    if (clickHandler) {
-      card.setAttribute("onclick", clickHandler.match(/"([^"]+)"/)[1]);
-      card.style.cursor = "pointer";
-    }
+    card.className = `${bgClass} ${borderClass} rounded p-2 text-[11px] font-mono transition duration-150 flex flex-col space-y-1`;
+    card.style.cursor = "pointer";
 
     card.innerHTML = `
       <div class="flex items-start justify-between">
@@ -1114,19 +1121,49 @@ function validateScriptsAndLevel() {
       <p class="text-gray-300 leading-normal text-xs font-sans">${p.message}</p>
     `;
 
-    // Ensure double-clicking or clicking works properly via inline binding or event listener
-    if (clickHandler) {
-      card.addEventListener("click", () => {
-        if (p.coordinate) {
-          window.navigateToCoordinate(p.coordinate.r, p.coordinate.c);
-        } else if (p.paletteId) {
-          window.navigateToPaletteBlock(p.paletteId);
-        }
-      });
-    }
+    card.addEventListener("click", () => {
+      if (p.coordinate) {
+        window.navigateToCoordinate(p.coordinate.r, p.coordinate.c);
+      } else if (p.paletteId) {
+        window.navigateToPaletteBlock(p.paletteId);
+      }
+    });
 
     problemsListDiv.appendChild(card);
-  });
+    itemsRendered++;
+  }
+
+  // 2. Render simulated errors up to the limit
+  if (state.simulatedMillionsOfErrorsCount > 0 && itemsRendered < displayLimit) {
+    const simulatedLeftToRender = Math.min(state.simulatedMillionsOfErrorsCount, displayLimit - itemsRendered);
+    for (let i = 0; i < simulatedLeftToRender; i++) {
+      const errorIndex = i + 1;
+      const card = document.createElement("div");
+      card.className = "bg-red-950/35 border border-red-900/40 hover:bg-red-950/60 rounded p-2 text-[11px] font-mono transition duration-150 flex flex-col space-y-1";
+      card.innerHTML = `
+        <div class="flex items-start justify-between">
+          <span class="text-red-400 font-semibold flex items-center">
+            <i class="fas fa-times-circle mr-1.5 text-xs"></i>
+            <span>STRESS TEST ERROR</span>
+          </span>
+          <span class="text-[9px] font-bold uppercase text-red-300/70 border border-current/25 px-1 rounded font-mono">
+            Simulated #${errorIndex}
+          </span>
+        </div>
+        <p class="text-gray-300 leading-normal text-xs font-sans">Stress testing performance with massive error volume: Simulated issue #${errorIndex} out of 1,000,000.</p>
+      `;
+      problemsListDiv.appendChild(card);
+      itemsRendered++;
+    }
+  }
+
+  // 3. Render a footer card explaining that the list is truncated
+  if (totalProblemsCount > displayLimit) {
+    const truncatedFooter = document.createElement("div");
+    truncatedFooter.className = "p-2 bg-gray-950 border border-purple-900/40 text-purple-300 text-center font-mono rounded text-[10px]";
+    truncatedFooter.textContent = `Showing ${displayLimit} of ${totalProblemsCount.toLocaleString()} errors (truncated for performance)`;
+    problemsListDiv.appendChild(truncatedFooter);
+  }
 }
 
 // Window sizing setup
@@ -1567,6 +1604,21 @@ function setupEventListeners() {
     state.runtimeErrors = [];
     validateScriptsAndLevel();
   });
+
+  // Toggle millions of simulated errors
+  const btnTriggerMillions = document.getElementById("btn-trigger-millions-errors");
+  if (btnTriggerMillions) {
+    btnTriggerMillions.addEventListener("click", () => {
+      if (state.simulatedMillionsOfErrorsCount > 0) {
+        state.simulatedMillionsOfErrorsCount = 0;
+        aiLog("Cleared 1,000,000 simulated stress-test errors.");
+      } else {
+        state.simulatedMillionsOfErrorsCount = 1000000;
+        aiLog("Simulated 1,000,000 stress-test errors in problem tracker successfully!", "success");
+      }
+      validateScriptsAndLevel();
+    });
+  }
 
   // Global Level configs
   document.getElementById("input-grid-cols").addEventListener("change", (e) => {
