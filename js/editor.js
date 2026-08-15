@@ -1356,6 +1356,12 @@ function validateScriptsAndLevel() {
         </span>
       </div>
       <p class="text-gray-300 leading-normal text-xs font-sans">${p.message}</p>
+      <div class="pt-1 flex justify-end">
+        <button class="btn-explain-ai px-2 py-0.5 text-[9px] bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-700/60 rounded flex items-center space-x-1 font-semibold transition" title="Explain with AI">
+          <i class="fas fa-brain text-[9px]"></i>
+          <span>Explain with AI</span>
+        </button>
+      </div>
     `;
 
     // Ensure double-clicking or clicking works properly via inline binding or event listener
@@ -1366,6 +1372,14 @@ function validateScriptsAndLevel() {
         } else if (p.paletteId) {
           window.navigateToPaletteBlock(p.paletteId);
         }
+      });
+    }
+
+    const btnExplain = card.querySelector(".btn-explain-ai");
+    if (btnExplain) {
+      btnExplain.addEventListener("click", (e) => {
+        e.stopPropagation();
+        explainProblemWithAI(p);
       });
     }
 
@@ -2516,6 +2530,186 @@ function aiLog(msg, type = "info") {
   const colorClass = type === "error" ? "text-red-400" : type === "success" ? "text-emerald-300" : "text-purple-300";
   consoleLog.innerHTML += `<br><span class="${colorClass}">&gt; ${msg}</span>`;
   consoleLog.scrollTop = consoleLog.scrollHeight;
+}
+
+// Generate AI explanation for errors and warnings
+function generateProblemExplanation(p) {
+  const msg = (p.message || "").toLowerCase();
+  const group = p.group || "";
+
+  if (group === "tile_js_syntax_error" || group === "palette_js_syntax_error") {
+    return {
+      explanation: "The custom JavaScript snippet attached to this block contains a syntax error, which prevents execution or may cause scripts to fail.",
+      fix: "Select the block and inspect its Custom Javascript field in the Scripts tab. Ensure brackets, quotes, and syntax are valid (e.g. ending statements with semicolons).",
+      prompt: "speed pad script"
+    };
+  }
+
+  if (group === "empty_js") {
+    return {
+      explanation: "A custom JS section exists for this block but contains no executable code (only whitespace or comments).",
+      fix: "Add valid JavaScript code (e.g., `player.vy = -12; sound.play('jump');`) or clear the textarea if no custom behavior is needed.",
+      prompt: "speed pad script"
+    };
+  }
+
+  if (group === "missing_action") {
+    return {
+      explanation: "A script trigger rule has an event defined (like 'On Collision Touch') but no target action is assigned.",
+      fix: "Select the block, open the Scripts panel, and assign an action to the script rule (or click the trash icon to remove the incomplete rule).",
+      prompt: "trampoline bounce script"
+    };
+  }
+
+  if (group === "invalid_script_param") {
+    return {
+      explanation: "A parameter value in a visual scripting rule is outside the safe operating range.",
+      fix: "Adjust the script parameter value (e.g. bounce strength) to be within the safe range of 1 to 20.",
+      prompt: "trampoline bounce script"
+    };
+  }
+
+  if (group === "solid_collectible") {
+    return {
+      explanation: "A collectible item (such as a coin or key) is marked as a solid obstacle, which blocks the player from touching and collecting it.",
+      fix: "Select the block and uncheck 'Is Solid Obstacle' in the Properties panel so the player can pass through and collect it.",
+      prompt: "Help fix solid collectible issue"
+    };
+  }
+
+  if (group === "floating_spawn") {
+    return {
+      explanation: "The Player Spawn location is placed floating in mid-air in Platformer mode with gravity active.",
+      fix: "Place solid ground tiles directly beneath the 🧙 Player Spawn block, or lower the spawn block onto a platform so the player doesn't instantly fall.",
+      prompt: "generate floating sky level"
+    };
+  }
+
+  if (group === "spawn_near_hazard") {
+    return {
+      explanation: "The Player Spawn block is placed directly adjacent to a hazard (lava/spikes) or an enemy actor.",
+      fix: "Move the Player Spawn at least 1-2 tiles away from hazards and enemies to avoid taking immediate damage on level start.",
+      prompt: "Help fix spawn location hazard"
+    };
+  }
+
+  if (group === "spawn_trapped") {
+    return {
+      explanation: "The Player Spawn block is completely surrounded by solid walls with no open path in Top-Down mode.",
+      fix: "Remove at least one surrounding solid block to create a clear pathway for player movement.",
+      prompt: "generate spiral maze"
+    };
+  }
+
+  if (group === "multiple_spawns") {
+    return {
+      explanation: "More than one 🧙 Player Spawn block exists on the level grid.",
+      fix: "Keep only one Player Spawn location. Use the Eraser tool to remove duplicate spawn blocks.",
+      prompt: "Help clean up extra player spawn blocks"
+    };
+  }
+
+  if (group === "multiple_portals") {
+    return {
+      explanation: "Multiple 🌀 Goal Portals are placed on the level.",
+      fix: "Remove extra Goal Portals so that there is a single clear finish goal for the level.",
+      prompt: "Help fix goal portal placement"
+    };
+  }
+
+  if (group === "topdown_gravity") {
+    return {
+      explanation: "Top-Down genre is selected, but Gravity is configured to a non-zero value, which causes downward acceleration drift.",
+      fix: "In the bottom toolbar settings, set the Gravity slider value to 0.0 for Top-Down games.",
+      prompt: "gravity flip script"
+    };
+  }
+
+  if (group === "runtime_crash") {
+    return {
+      explanation: "A JavaScript runtime exception occurred while running the game simulation.",
+      fix: "Inspect custom script logic on the block where the exception occurred and verify variable references.",
+      prompt: "Fix runtime error in game script"
+    };
+  }
+
+  // Text message heuristic fallbacks
+  if (msg.includes("no player spawn")) {
+    return {
+      explanation: "The level lacks a starting point for the player character.",
+      fix: "Select the 🧙 Player Spawn block from the palette and place it on the level grid.",
+      prompt: "generate floating sky level"
+    };
+  }
+
+  if (msg.includes("no goal portal")) {
+    return {
+      explanation: "The level has no exit portal, making it impossible for the player to complete or win.",
+      fix: "Select the 🌀 Goal Portal from the palette and place it where the player should finish the level.",
+      prompt: "generate castle of doom"
+    };
+  }
+
+  if (msg.includes("locked door") && msg.includes("no golden key")) {
+    return {
+      explanation: "A 🔒 Locked Door is present on the level, but no 🔑 Golden Key exists to unlock it.",
+      fix: "Place a 🔑 Golden Key block somewhere reachable on the level so the player can pick it up and open the door.",
+      prompt: "generate spiral maze"
+    };
+  }
+
+  if (msg.includes("golden key") && msg.includes("no locked door")) {
+    return {
+      explanation: "A 🔑 Golden Key is placed on the level, but there is no 🔒 Locked Door to unlock.",
+      fix: "Add a 🔒 Locked Door blocking an important path or portal, or erase the unused key.",
+      prompt: "generate spiral maze"
+    };
+  }
+
+  if (msg.includes("platformer") && msg.includes("no solid")) {
+    return {
+      explanation: "Platformer genre is active with gravity, but there are no solid platform blocks placed on the grid.",
+      fix: "Paint some 🧱 Ground or 🪨 Stone platform blocks for the player to stand on.",
+      prompt: "generate floating sky level"
+    };
+  }
+
+  return {
+    explanation: `The system detected a potential issue: "${p.message}"`,
+    fix: "Review your level layout or tile properties to address this condition.",
+    prompt: `Help fix issue: ${p.message}`
+  };
+}
+
+// "Explain with AI" button click handler
+function explainProblemWithAI(p) {
+  // 1. Switch right panel to AI Copilot tab
+  toggleRightPanelTab("ai-copilot");
+  if (typeof openSidebar === "function") {
+    openSidebar();
+  }
+
+  // 2. Generate explanation and fix suggestion
+  const exp = generateProblemExplanation(p);
+
+  // 3. Print analysis in AI Copilot console log
+  aiLog(`🤖 <strong>AI Problem Diagnostic</strong> [${p.type ? p.type.toUpperCase() : 'ISSUE'}]`, "info");
+  if (p.coordinate) {
+    aiLog(`<strong>Target:</strong> Grid Coordinate (${p.coordinate.c}, ${p.coordinate.r})`, "info");
+  } else if (p.paletteId) {
+    aiLog(`<strong>Target:</strong> Palette Block [${p.tileName || p.paletteId}]`, "info");
+  } else {
+    aiLog(`<strong>Target:</strong> Global Level Configuration`, "info");
+  }
+  aiLog(`<strong>Message:</strong> ${p.message}`, "error");
+  aiLog(`<strong>Explanation:</strong> ${exp.explanation}`, "info");
+  aiLog(`<strong>Recommended Fix:</strong> ${exp.fix}`, "success");
+
+  // 4. Set prompt input value
+  const promptInput = document.getElementById("ai-prompt-input");
+  if (promptInput) {
+    promptInput.value = exp.prompt || `Help fix: ${p.message}`;
+  }
 }
 
 // Procedural client-side heuristics AI generation parsers
