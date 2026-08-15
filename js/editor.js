@@ -1981,6 +1981,21 @@ function setupEventListeners() {
   });
 
   // AI Copilot Actions
+  const btnAiSend = document.getElementById("btn-ai-send");
+  if (btnAiSend) {
+    btnAiSend.addEventListener("click", handleAiSendPrompt);
+  }
+
+  const aiPromptInput = document.getElementById("ai-prompt-input");
+  if (aiPromptInput) {
+    aiPromptInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleAiSendPrompt();
+      }
+    });
+  }
+
   document.getElementById("btn-ai-gen-script").addEventListener("click", () => {
     const prompt = document.getElementById("ai-prompt-input").value;
     if (!prompt.trim()) {
@@ -2507,6 +2522,25 @@ function selectSpriteForEditing(id) {
   document.getElementById("sprite-emoji-custom-input").value = block.emoji || "";
   document.getElementById("sprite-color-input").value = block.color;
   document.getElementById("sprite-color-lbl").textContent = block.color.toUpperCase();
+}
+
+function handleAiSendPrompt() {
+  const promptInput = document.getElementById("ai-prompt-input");
+  const prompt = promptInput ? promptInput.value.trim() : "";
+  if (!prompt) {
+    aiLog("Please write a description/prompt first!", "error");
+    return;
+  }
+
+  const pLower = prompt.toLowerCase();
+  const levelKeywords = ["level", "maze", "castle", "sky", "labyrinth", "parkour", "doom", "spiral", "map", "dungeon", "spooky"];
+  const isLevelPrompt = levelKeywords.some(kw => pLower.includes(kw));
+
+  if (isLevelPrompt) {
+    generateAiLevel(prompt);
+  } else {
+    generateAiScript(prompt);
+  }
 }
 
 // Helper to print in the AI console log

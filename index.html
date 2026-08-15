@@ -816,7 +816,13 @@ game.addCoins(5);"></textarea>
           <!-- Generation prompt input -->
           <div class="space-y-1.5">
             <label class="text-[10px] uppercase font-bold text-gray-500 font-mono block">Describe what to generate</label>
-            <textarea id="ai-prompt-input" rows="3" class="w-full bg-gray-950 border border-gray-700 rounded p-2 text-xs text-purple-100 placeholder-gray-600 font-mono focus:outline-none focus:border-purple-500" placeholder="e.g. 'speed pad', 'gravity flip script', 'spooky castle level', or 'spiral maze'"></textarea>
+            <div class="space-y-2">
+              <textarea id="ai-prompt-input" rows="3" class="w-full bg-gray-950 border border-gray-700 rounded p-2 text-xs text-purple-100 placeholder-gray-600 font-mono focus:outline-none focus:border-purple-500" placeholder="e.g. 'speed pad', 'gravity flip script', 'spooky castle level', or 'spiral maze'"></textarea>
+              <button id="btn-ai-send" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-1.5 px-3 rounded text-xs transition flex items-center justify-center space-x-1.5 shadow">
+                <i class="fas fa-paper-plane"></i>
+                <span>Send</span>
+              </button>
+            </div>
           </div>
 
           <!-- Quick Prompts / Prompt Tags -->
