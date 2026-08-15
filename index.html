@@ -428,8 +428,12 @@
         <div id="game-over-banner" class="absolute hidden inset-0 bg-black/75 flex flex-col items-center justify-center z-20 space-y-4">
           <h2 class="text-3xl md:text-5xl font-extrabold tracking-widest text-red-500 drop-shadow-lg">GAME OVER</h2>
           <p id="game-over-reason" class="text-sm font-mono text-gray-300">You touched hazard lava!</p>
-          <div class="flex space-x-3">
+          <div class="flex flex-wrap justify-center gap-3">
             <button id="btn-fail-retry" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm transition">Retry Level</button>
+            <button id="btn-fail-explain-ai" class="px-4 py-2 bg-purple-900/80 hover:bg-purple-800 text-purple-200 border border-purple-700 rounded-lg text-sm font-bold transition flex items-center space-x-1.5 shadow" title="Explain with AI">
+              <i class="fas fa-brain"></i>
+              <span>Explain with AI</span>
+            </button>
             <button id="btn-fail-edit" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold rounded-lg text-sm transition">Back to Editor</button>
           </div>
         </div>
@@ -779,28 +783,6 @@ game.addCoins(5);"></textarea>
             </div>
           </div>
 
-          <!-- Code Errors & Problems List (Always visible inside scripts panel) -->
-          <div id="script-problems-panel" class="border-t border-gray-800 pt-4 space-y-3">
-            <h4 class="text-xs font-bold text-gray-300 flex items-center justify-between">
-              <span class="flex items-center space-x-1.5 text-red-400">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>Errors & Problems</span>
-              </span>
-              <span id="problems-count-badge" class="text-[10px] bg-red-950 text-red-300 px-2 py-0.5 rounded-full border border-red-800 font-mono font-bold">0</span>
-            </h4>
-
-            <div id="runtime-error-controls" class="hidden flex items-center justify-between text-[10px] bg-red-950/40 border border-red-900/50 p-2 rounded">
-              <span class="text-red-300 font-mono flex items-center"><i class="fas fa-bug mr-1"></i>Runtime exceptions caught</span>
-              <button id="btn-clear-runtime" class="text-[9px] bg-red-900/60 hover:bg-red-800 text-red-100 px-2 py-0.5 rounded border border-red-700 transition">
-                Clear
-              </button>
-            </div>
-
-            <div id="problems-list" class="space-y-1.5 max-h-64 overflow-y-auto pr-1">
-              <!-- Dynamically populated problems list -->
-              <p class="text-[11px] text-gray-500 italic font-mono">No errors or warnings found.</p>
-            </div>
-          </div>
         </div>
 
         <!-- TAB Content: AI Copilot Assistant -->
@@ -857,6 +839,29 @@ game.addCoins(5);"></textarea>
               &gt; AI Copilot status online.<br>Ready to receive commands...
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Persistent Code Errors & Problems List (Visible across all sidebar tabs) -->
+      <div id="script-problems-panel" class="p-3 bg-gray-950 border-t border-gray-800 space-y-2">
+        <h4 class="text-xs font-bold text-gray-300 flex items-center justify-between">
+          <span class="flex items-center space-x-1.5 text-red-400">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Errors & Problems</span>
+          </span>
+          <span id="problems-count-badge" class="text-[10px] bg-red-950 text-red-300 px-2 py-0.5 rounded-full border border-red-800 font-mono font-bold">0</span>
+        </h4>
+
+        <div id="runtime-error-controls" class="hidden flex items-center justify-between text-[10px] bg-red-950/40 border border-red-900/50 p-2 rounded">
+          <span class="text-red-300 font-mono flex items-center"><i class="fas fa-bug mr-1"></i>Runtime exceptions caught</span>
+          <button id="btn-clear-runtime" class="text-[9px] bg-red-900/60 hover:bg-red-800 text-red-100 px-2 py-0.5 rounded border border-red-700 transition">
+            Clear
+          </button>
+        </div>
+
+        <div id="problems-list" class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+          <!-- Dynamically populated problems list -->
+          <p class="text-[11px] text-gray-500 italic font-mono">No errors or warnings found.</p>
         </div>
       </div>
 

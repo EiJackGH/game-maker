@@ -807,6 +807,23 @@ document.getElementById("btn-fail-retry").addEventListener("click", () => {
   game.stop();
   game.start();
 });
+const btnFailExplainAi = document.getElementById("btn-fail-explain-ai");
+if (btnFailExplainAi) {
+  btnFailExplainAi.addEventListener("click", () => {
+    game.stop();
+    btnEditMode.click();
+    const reasonEl = document.getElementById("game-over-reason");
+    const reason = reasonEl ? reasonEl.textContent : "Game Over";
+    if (typeof explainProblemWithAI === "function") {
+      explainProblemWithAI({
+        type: "error",
+        source: "runtime",
+        message: `Game Over: ${reason}`
+      });
+    }
+  });
+}
+
 document.getElementById("btn-fail-edit").addEventListener("click", () => {
   game.stop();
   btnEditMode.click();

@@ -2667,7 +2667,40 @@ function generateProblemExplanation(p) {
     };
   }
 
+  // Group summary issue fallback
+  if (p.groupSummary) {
+    return {
+      explanation: `Multiple instances (${p.message}) of similar configuration issues were detected across the level map.`,
+      fix: "Inspect the individual error cards above to address each specific block or placement issue.",
+      prompt: "Help fix level layout issues"
+    };
+  }
+
   // Text message heuristic fallbacks
+  if (msg.includes("lava") || msg.includes("hazard")) {
+    return {
+      explanation: "The player wizard sustained fatal damage from touching a hazard or lava trap.",
+      fix: "Move hazard blocks away from critical paths, or build safe platform bridges for the player to jump over.",
+      prompt: "Help fix hazard layout"
+    };
+  }
+
+  if (msg.includes("fell") || msg.includes("out of bounds")) {
+    return {
+      explanation: "The player character fell below the map boundaries into a pit.",
+      fix: "Place solid floor or platform tiles across bottom gaps or add bouncy pads to help the player recover.",
+      prompt: "generate floating sky level"
+    };
+  }
+
+  if (msg.includes("enemy") || msg.includes("goblin") || msg.includes("bot")) {
+    return {
+      explanation: "The player character was defeated in combat by an active enemy or agent actor.",
+      fix: "Reposition enemies, adjust damage properties in the sidebar, or give the player more room to jump/evade.",
+      prompt: "Help adjust enemy combat"
+    };
+  }
+
   if (msg.includes("no player spawn")) {
     return {
       explanation: "The level lacks a starting point for the player character.",
