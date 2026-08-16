@@ -2165,6 +2165,10 @@ function setupEventListeners() {
 
   // Level file import-export triggers
   document.getElementById("btn-export").addEventListener("click", () => {
+    if (!navigator.onLine) {
+      alert("There's a problem exporting JSON, Please check your internet connection and try again");
+      return;
+    }
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
       cols: state.cols,
       rows: state.rows,
