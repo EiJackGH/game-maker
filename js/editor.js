@@ -516,13 +516,16 @@ function syncFormControls() {
 
 function updateMobileButtonUI() {
   const lbl = document.getElementById("label-mobile-mode");
+  const btn = document.getElementById("btn-mobile-mode");
   if (!lbl) return;
   if (state.mobileMode) {
     lbl.textContent = "ON";
     lbl.className = "text-xs font-mono font-bold text-emerald-400 animate-pulse";
+    if (btn) btn.title = "Mobile Mode Enabled";
   } else {
     lbl.textContent = "OFF";
     lbl.className = "text-xs font-mono font-bold text-red-500";
+    if (btn) btn.title = "Not turned on mobile mode on this computer";
   }
 }
 
@@ -1238,6 +1241,38 @@ function validateScriptsAndLevel() {
       message: `Genre is set to Top-Down, but Gravity is configured to a non-zero value (${state.gravity}). This can cause unintended drift/movement issues.`,
       group: "topdown_gravity",
       groupName: "Top-Down Mode Gravity Configuration"
+    });
+  }
+
+  // Check for Mobile Mode status on computer or level with computer block
+  let hasComputerTile = false;
+  for (let r = 0; r < state.rows; r++) {
+    for (let c = 0; c < state.cols; c++) {
+      const tile = state.grid[r][c];
+      if (tile && (tile.id === "computer" || (tile.name && tile.name.toLowerCase().includes("computer")) || tile.emoji === "💻" || tile.emoji === "🖥️")) {
+        hasComputerTile = true;
+        break;
+      }
+    }
+    if (hasComputerTile) break;
+  }
+  if (!hasComputerTile && state.customBlocks) {
+    Object.values(state.customBlocks).forEach(b => {
+      if (b && (b.id === "computer" || (b.name && b.name.toLowerCase().includes("computer")) || b.emoji === "💻" || b.emoji === "🖥️")) {
+        hasComputerTile = true;
+      }
+    });
+  }
+
+  const isComputerViewport = typeof window !== "undefined" && (window.innerWidth >= 1024 || !("ontouchstart" in window));
+
+  if (!state.mobileMode && (isComputerViewport || hasComputerTile)) {
+    rawProblems.push({
+      type: "warning",
+      source: "level",
+      message: "Not turned on mobile mode on this computer",
+      group: "mobile_mode_off",
+      groupName: "Mobile Mode Configuration"
     });
   }
 
@@ -2058,6 +2093,9 @@ function setupEventListeners() {
       }
       if (typeof updateMobileControlsVisibility === "function") {
         updateMobileControlsVisibility();
+      }
+      if (typeof validateScriptsAndLevel === "function") {
+        validateScriptsAndLevel();
       }
       saveToLocalStorage();
     });
