@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JavaScript Required - Blocks Retro Game Maker</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Dark Theme Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1f2937;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #4b5563;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6b7280;
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4 selection:bg-purple-600 selection:text-white font-sans">
+
+  <div class="max-w-xl w-full bg-gray-900 border border-purple-900/50 rounded-2xl shadow-2xl p-6 md:p-8 space-y-6">
+    <!-- Header Badge -->
+    <div class="flex items-center space-x-3 border-b border-gray-800 pb-4">
+      <div class="bg-gradient-to-tr from-purple-600 to-indigo-600 text-white p-3 rounded-xl shadow-lg shadow-purple-900/30">
+        <i class="fas fa-cubes text-2xl"></i>
+      </div>
+      <div>
+        <h1 class="font-extrabold text-xl md:text-2xl tracking-wide bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">BLOCKS</h1>
+        <p class="text-xs text-gray-400 font-mono">Retro Game Maker & IDE</p>
+      </div>
+    </div>
+
+    <!-- Main Warning Banner -->
+    <div class="bg-amber-950/40 border border-amber-600/40 rounded-xl p-4 flex items-start space-x-3 text-amber-200">
+      <div class="p-2 bg-amber-900/60 rounded-lg text-amber-400 text-lg flex-shrink-0">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div class="space-y-1 text-xs leading-relaxed">
+        <h2 class="font-bold text-sm text-amber-300">JavaScript is Disabled or Unsupported</h2>
+        <p>Blocks is an interactive web-based IDE that uses JavaScript to run the HTML5 Canvas game engine, script compiler, sprite builder, and level editor. Without JavaScript, game physics and interactive tools cannot run.</p>
+      </div>
+    </div>
+
+    <!-- How to Enable JavaScript Instructions -->
+    <div class="space-y-3">
+      <h3 class="text-xs font-bold uppercase tracking-wider text-purple-400 font-mono flex items-center space-x-1.5">
+        <i class="fas fa-cogs"></i>
+        <span>How to Enable JavaScript in Your Browser</span>
+      </h3>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <!-- Chrome / Edge -->
+        <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 space-y-1">
+          <div class="font-semibold text-gray-200 flex items-center space-x-1.5">
+            <i class="fab fa-chrome text-purple-400"></i>
+            <span>Google Chrome & Edge</span>
+          </div>
+          <p class="text-[11px] text-gray-400 leading-relaxed font-mono">
+            Settings &gt; Privacy and security &gt; Site Settings &gt; JavaScript &gt; Select "Sites can use Javascript".
+          </p>
+        </div>
+
+        <!-- Firefox -->
+        <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 space-y-1">
+          <div class="font-semibold text-gray-200 flex items-center space-x-1.5">
+            <i class="fab fa-firefox-browser text-purple-400"></i>
+            <span>Mozilla Firefox</span>
+          </div>
+          <p class="text-[11px] text-gray-400 leading-relaxed font-mono">
+            Type <code class="text-purple-300">about:config</code> in the URL bar, search for <code class="text-purple-300">javascript.enabled</code>, and set value to <code class="text-purple-300">true</code>.
+          </p>
+        </div>
+
+        <!-- Safari -->
+        <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 space-y-1">
+          <div class="font-semibold text-gray-200 flex items-center space-x-1.5">
+            <i class="fab fa-safari text-purple-400"></i>
+            <span>Apple Safari</span>
+          </div>
+          <p class="text-[11px] text-gray-400 leading-relaxed font-mono">
+            Settings &gt; Security tab &gt; Check the box for "Enable JavaScript".
+          </p>
+        </div>
+
+        <!-- Mobile Browsers -->
+        <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 space-y-1">
+          <div class="font-semibold text-gray-200 flex items-center space-x-1.5">
+            <i class="fas fa-mobile-alt text-purple-400"></i>
+            <span>Mobile Browsers</span>
+          </div>
+          <p class="text-[11px] text-gray-400 leading-relaxed font-mono">
+            Open browser settings &gt; Site settings / Advanced &gt; Enable JavaScript.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="pt-4 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p class="text-[11px] text-gray-500 font-mono">After enabling JavaScript, refresh or click below.</p>
+      <a href="index.html" class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl transition text-center shadow-lg shadow-purple-900/30 flex items-center justify-center space-x-2">
+        <i class="fas fa-rotate-right"></i>
+        <span>Return to Blocks Editor</span>
+      </a>
+    </div>
+  </div>
+
+</body>
+</html>
