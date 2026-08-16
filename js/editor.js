@@ -502,6 +502,34 @@ function loadFromLocalStorage() {
   }
 }
 
+function checkHasComputer() {
+  let hasComputerTile = false;
+  if (state.grid) {
+    for (let r = 0; r < state.rows; r++) {
+      if (!state.grid[r]) continue;
+      for (let c = 0; c < state.cols; c++) {
+        const tile = state.grid[r][c];
+        if (tile && (tile.id === "computer" || (tile.name && tile.name.toLowerCase().includes("computer")) || tile.emoji === "💻" || tile.emoji === "🖥️")) {
+          hasComputerTile = true;
+          break;
+        }
+      }
+      if (hasComputerTile) break;
+    }
+  }
+  if (!hasComputerTile && state.customBlocks) {
+    Object.values(state.customBlocks).forEach(b => {
+      if (b && (b.id === "computer" || (b.name && b.name.toLowerCase().includes("computer")) || b.emoji === "💻" || b.emoji === "🖥️")) {
+        hasComputerTile = true;
+      }
+    });
+  }
+
+  const isComputerViewport = typeof window !== "undefined" && (window.innerWidth >= 1024 || !("ontouchstart" in window));
+
+  return isComputerViewport || hasComputerTile;
+}
+
 function syncFormControls() {
   document.getElementById("input-grid-cols").value = state.cols;
   document.getElementById("input-grid-rows").value = state.rows;
@@ -518,14 +546,32 @@ function updateMobileButtonUI() {
   const lbl = document.getElementById("label-mobile-mode");
   const btn = document.getElementById("btn-mobile-mode");
   if (!lbl) return;
-  if (state.mobileMode) {
-    lbl.textContent = "ON";
-    lbl.className = "text-xs font-mono font-bold text-emerald-400 animate-pulse";
-    if (btn) btn.title = "Mobile Mode Enabled";
-  } else {
+
+  const hasComp = checkHasComputer();
+
+  if (hasComp) {
+    state.mobileMode = false;
     lbl.textContent = "OFF";
     lbl.className = "text-xs font-mono font-bold text-red-500";
-    if (btn) btn.title = "Not turned on mobile mode on this computer";
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add("opacity-50", "cursor-not-allowed");
+      btn.title = "Unavailable to turn on the mobile mode.";
+    }
+  } else {
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove("opacity-50", "cursor-not-allowed");
+    }
+    if (state.mobileMode) {
+      lbl.textContent = "ON";
+      lbl.className = "text-xs font-mono font-bold text-emerald-400 animate-pulse";
+      if (btn) btn.title = "Mobile Mode Enabled";
+    } else {
+      lbl.textContent = "OFF";
+      lbl.className = "text-xs font-mono font-bold text-red-500";
+      if (btn) btn.title = "Mobile Mode Disabled";
+    }
   }
 }
 
@@ -1245,32 +1291,11 @@ function validateScriptsAndLevel() {
   }
 
   // Check for Mobile Mode status on computer or level with computer block
-  let hasComputerTile = false;
-  for (let r = 0; r < state.rows; r++) {
-    for (let c = 0; c < state.cols; c++) {
-      const tile = state.grid[r][c];
-      if (tile && (tile.id === "computer" || (tile.name && tile.name.toLowerCase().includes("computer")) || tile.emoji === "💻" || tile.emoji === "🖥️")) {
-        hasComputerTile = true;
-        break;
-      }
-    }
-    if (hasComputerTile) break;
-  }
-  if (!hasComputerTile && state.customBlocks) {
-    Object.values(state.customBlocks).forEach(b => {
-      if (b && (b.id === "computer" || (b.name && b.name.toLowerCase().includes("computer")) || b.emoji === "💻" || b.emoji === "🖥️")) {
-        hasComputerTile = true;
-      }
-    });
-  }
-
-  const isComputerViewport = typeof window !== "undefined" && (window.innerWidth >= 1024 || !("ontouchstart" in window));
-
-  if (!state.mobileMode && (isComputerViewport || hasComputerTile)) {
+  if (!state.mobileMode && checkHasComputer()) {
     rawProblems.push({
       type: "warning",
       source: "level",
-      message: "Not turned on mobile mode on this computer",
+      message: "Unavailable to turn on the mobile mode.",
       group: "mobile_mode_off",
       groupName: "Mobile Mode Configuration"
     });
@@ -2860,6 +2885,14 @@ function generateProblemExplanation(p) {
       explanation: "Multiple 🌀 Goal Portals are placed on the level.",
       fix: "Remove extra Goal Portals so that there is a single clear finish goal for the level.",
       prompt: "Help fix goal portal placement"
+    };
+  }
+
+  if (group === "mobile_mode_off" || msg.includes("mobile mode")) {
+    return {
+      explanation: "Mobile mode is unavailable when playing or editing on a computer environment or level with a computer block.",
+      fix: "Use a mobile/touch device or remove computer blocks if attempting to test touch virtual controls.",
+      prompt: "Help with mobile mode configuration"
     };
   }
 
