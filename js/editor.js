@@ -1945,6 +1945,10 @@ function setupEventListeners() {
   });
 
   document.getElementById("btn-file-import-mgr").addEventListener("click", () => {
+    if (!navigator.onLine) {
+      alert("There's a problem importing JSON, Please check your internet connection and try again");
+      return;
+    }
     document.getElementById("file-import-mgr-input").click();
   });
 
@@ -2187,6 +2191,10 @@ function setupEventListeners() {
   });
 
   document.getElementById("btn-import").addEventListener("click", () => {
+    if (!navigator.onLine) {
+      alert("There's a problem importing JSON, Please check your internet connection and try again");
+      return;
+    }
     document.getElementById("import-file-input").click();
   });
   document.getElementById("import-file-input").addEventListener("change", (e) => {
