@@ -844,24 +844,46 @@ game.addCoins(5);"></textarea>
 
       <!-- Persistent Code Errors & Problems List (Visible across all sidebar tabs) -->
       <div id="script-problems-panel" class="p-3 bg-gray-950 border-t border-gray-800 space-y-2">
-        <h4 class="text-xs font-bold text-gray-300 flex items-center justify-between">
-          <span class="flex items-center space-x-1.5 text-red-400">
-            <i class="fas fa-exclamation-triangle"></i>
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-bold text-gray-300 flex items-center space-x-1.5">
+            <i class="fas fa-exclamation-triangle text-red-400"></i>
             <span>Errors & Problems</span>
-          </span>
-          <span id="problems-count-badge" class="text-[10px] bg-red-950 text-red-300 px-2 py-0.5 rounded-full border border-red-800 font-mono font-bold">0</span>
-        </h4>
-
-        <div id="runtime-error-controls" class="hidden flex items-center justify-between text-[10px] bg-red-950/40 border border-red-900/50 p-2 rounded">
-          <span class="text-red-300 font-mono flex items-center"><i class="fas fa-bug mr-1"></i>Runtime exceptions caught</span>
-          <button id="btn-clear-runtime" class="text-[9px] bg-red-900/60 hover:bg-red-800 text-red-100 px-2 py-0.5 rounded border border-red-700 transition">
-            Clear
+            <span id="problems-count-badge" class="text-[10px] bg-red-950 text-red-300 px-2 py-0.5 rounded-full border border-red-800 font-mono font-bold">0</span>
+          </h4>
+          <button id="btn-toggle-problems-panel" class="text-gray-400 hover:text-white text-xs p-1" title="Collapse/Expand Problems Panel">
+            <i class="fas fa-chevron-down" id="problems-panel-chevron"></i>
           </button>
         </div>
 
-        <div id="problems-list" class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-          <!-- Dynamically populated problems list -->
-          <p class="text-[11px] text-gray-500 italic font-mono">No errors or warnings found.</p>
+        <!-- Collapsible Content Body -->
+        <div id="problems-panel-body" class="space-y-2">
+          <!-- Filter options -->
+          <div class="flex items-center space-x-1 text-[10px] bg-gray-900 p-1 rounded border border-gray-800 font-mono">
+            <button id="btn-problems-filter-all" class="flex-1 py-0.5 px-1 rounded text-center transition font-semibold bg-purple-900/60 text-purple-200 border border-purple-700/60">
+              All (<span id="filter-count-all">0</span>)
+            </button>
+            <button id="btn-problems-filter-errors" class="flex-1 py-0.5 px-1 rounded text-center transition font-semibold text-gray-400 hover:text-red-300">
+              Errors (<span id="filter-count-errors">0</span>)
+            </button>
+            <button id="btn-problems-filter-warnings" class="flex-1 py-0.5 px-1 rounded text-center transition font-semibold text-gray-400 hover:text-yellow-300">
+              Warnings (<span id="filter-count-warnings">0</span>)
+            </button>
+            <button id="btn-problems-filter-hidden" class="flex-1 py-0.5 px-1 rounded text-center transition font-semibold text-gray-400 hover:text-purple-300">
+              Hidden (<span id="filter-count-hidden">0</span>)
+            </button>
+          </div>
+
+          <div id="runtime-error-controls" class="hidden flex items-center justify-between text-[10px] bg-red-950/40 border border-red-900/50 p-2 rounded">
+            <span class="text-red-300 font-mono flex items-center"><i class="fas fa-bug mr-1"></i>Runtime exceptions caught</span>
+            <button id="btn-clear-runtime" class="text-[9px] bg-red-900/60 hover:bg-red-800 text-red-100 px-2 py-0.5 rounded border border-red-700 transition">
+              Clear
+            </button>
+          </div>
+
+          <div id="problems-list" class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+            <!-- Dynamically populated problems list -->
+            <p class="text-[11px] text-gray-500 italic font-mono">No errors or warnings found.</p>
+          </div>
         </div>
       </div>
 
