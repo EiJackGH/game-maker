@@ -40,7 +40,12 @@ const state = {
 
   // File Manager State
   currentFileId: null, // unique file ID if loaded/saved, e.g. "file_xxxxxx"
-  currentFileName: ""  // user-visible name
+  currentFileName: "", // user-visible name
+
+  // Errors & Problems panel state
+  hiddenProblems: [], // Array of problem key signatures that are hidden/dismissed
+  problemsFilter: "all", // "all" | "error" | "warning" | "hidden"
+  problemsPanelCollapsed: false
 };
 
 const ORIGINAL_DEFAULT_BLOCKS = JSON.parse(JSON.stringify(DEFAULT_BLOCKS));
@@ -901,6 +906,12 @@ window.navigateToPaletteBlock = function(id) {
   });
 };
 
+function getProblemKey(p) {
+  if (p.key) return p.key;
+  let loc = p.coordinate ? `r${p.coordinate.r}c${p.coordinate.c}` : p.paletteId ? `pal_${p.paletteId}` : "global";
+  return `${p.type}_${p.group || 'nogroup'}_${loc}_${p.message}`;
+}
+
 // Real-time Static Analysis & Level Validation Engine
 function validateScriptsAndLevel() {
   const rawProblems = [];
@@ -1244,6 +1255,11 @@ function validateScriptsAndLevel() {
     });
   });
 
+  // Assign keys to raw problems
+  rawProblems.forEach(p => {
+    p.key = getProblemKey(p);
+  });
+
   // Perform aggregation / grouping to enforce the "no high volume" constraint
   const problems = [];
   const groups = {};
@@ -1281,8 +1297,24 @@ function validateScriptsAndLevel() {
         type: group.type,
         source: items[0].source || "level",
         message: `...and ${items.length - 3} more similar issues of type: ${group.name}`,
-        groupSummary: true
+        groupSummary: true,
+        key: `group_summary_${groupId}`
       });
+    }
+  });
+
+  // Partition problems into active (unhidden) and hidden problems
+  if (!state.hiddenProblems) state.hiddenProblems = [];
+  const hiddenKeys = new Set(state.hiddenProblems);
+
+  const activeProblems = [];
+  const hiddenProblemsList = [];
+
+  problems.forEach(p => {
+    if (hiddenKeys.has(p.key)) {
+      hiddenProblemsList.push(p);
+    } else {
+      activeProblems.push(p);
     }
   });
 
@@ -1294,31 +1326,85 @@ function validateScriptsAndLevel() {
 
   if (!problemsListDiv) return;
 
-  problemsListDiv.innerHTML = "";
-  problemsCountBadge.textContent = problems.length;
+  // Filter button counts
+  const countAll = activeProblems.length;
+  const countErrors = activeProblems.filter(p => p.type === "error").length;
+  const countWarnings = activeProblems.filter(p => p.type === "warning").length;
+  const countHidden = hiddenProblemsList.length;
 
-  // Show/Hide badge-logic dot notification based on errors count
-  const errorCount = problems.filter(p => p.type === "error").length;
-  if (errorCount > 0) {
-    badgeLogic.classList.remove("hidden");
+  const filterCountAll = document.getElementById("filter-count-all");
+  const filterCountErrors = document.getElementById("filter-count-errors");
+  const filterCountWarnings = document.getElementById("filter-count-warnings");
+  const filterCountHidden = document.getElementById("filter-count-hidden");
+
+  if (filterCountAll) filterCountAll.textContent = countAll;
+  if (filterCountErrors) filterCountErrors.textContent = countErrors;
+  if (filterCountWarnings) filterCountWarnings.textContent = countWarnings;
+  if (filterCountHidden) filterCountHidden.textContent = countHidden;
+
+  problemsCountBadge.textContent = countAll;
+
+  // Show/Hide badge-logic dot notification based on active unhidden error count
+  if (countErrors > 0) {
+    if (badgeLogic) badgeLogic.classList.remove("hidden");
   } else {
-    badgeLogic.classList.add("hidden");
+    if (badgeLogic) badgeLogic.classList.add("hidden");
   }
+
+  // Update Filter Tab UI active states
+  const filterBtns = {
+    all: document.getElementById("btn-problems-filter-all"),
+    error: document.getElementById("btn-problems-filter-errors"),
+    warning: document.getElementById("btn-problems-filter-warnings"),
+    hidden: document.getElementById("btn-problems-filter-hidden")
+  };
+
+  const currentFilter = state.problemsFilter || "all";
+  Object.keys(filterBtns).forEach(fKey => {
+    const btn = filterBtns[fKey];
+    if (btn) {
+      if (fKey === currentFilter) {
+        btn.className = "flex-1 py-0.5 px-1 rounded text-center transition font-semibold bg-purple-900/60 text-purple-200 border border-purple-700/60";
+      } else {
+        btn.className = "flex-1 py-0.5 px-1 rounded text-center transition font-semibold text-gray-400 hover:text-white";
+      }
+    }
+  });
 
   // Show/Hide runtime error clean triggers
   if (state.runtimeErrors.length > 0) {
-    runtimeControls.classList.remove("hidden");
+    if (runtimeControls) runtimeControls.classList.remove("hidden");
   } else {
-    runtimeControls.classList.add("hidden");
+    if (runtimeControls) runtimeControls.classList.add("hidden");
   }
 
-  if (problems.length === 0) {
-    problemsListDiv.innerHTML = `<p class="text-[11px] text-gray-500 italic font-mono">No errors or warnings found.</p>`;
+  // Determine list to display
+  let displayList = [];
+  if (currentFilter === "error") {
+    displayList = activeProblems.filter(p => p.type === "error");
+  } else if (currentFilter === "warning") {
+    displayList = activeProblems.filter(p => p.type === "warning");
+  } else if (currentFilter === "hidden") {
+    displayList = hiddenProblemsList;
+  } else {
+    displayList = activeProblems;
+  }
+
+  problemsListDiv.innerHTML = "";
+
+  if (displayList.length === 0) {
+    let emptyMsg = "No errors or warnings found.";
+    if (currentFilter === "error") emptyMsg = "No active errors found.";
+    else if (currentFilter === "warning") emptyMsg = "No active warnings found.";
+    else if (currentFilter === "hidden") emptyMsg = "No hidden problems found.";
+
+    problemsListDiv.innerHTML = `<p class="text-[11px] text-gray-500 italic font-mono">${emptyMsg}</p>`;
     return;
   }
 
-  problems.forEach(p => {
+  displayList.forEach(p => {
     const isError = p.type === "error";
+    const isHidden = hiddenKeys.has(p.key);
     const bgClass = isError ? "bg-red-950/35 border-red-900/40 hover:bg-red-950/60" : "bg-yellow-950/20 border-yellow-900/30 hover:bg-yellow-950/40";
     const borderClass = "border";
     const textClass = isError ? "text-red-400" : "text-yellow-400";
@@ -1345,6 +1431,18 @@ function validateScriptsAndLevel() {
       card.style.cursor = "pointer";
     }
 
+    const hideUnhideBtn = isHidden ? `
+      <button class="btn-unhide-problem px-2 py-0.5 text-[9px] bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-700/60 rounded flex items-center space-x-1 font-semibold transition" title="Unhide Issue">
+        <i class="fas fa-eye text-[9px]"></i>
+        <span>Unhide</span>
+      </button>
+    ` : `
+      <button class="btn-hide-problem px-2 py-0.5 text-[9px] bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 border border-gray-700 rounded flex items-center space-x-1 font-semibold transition" title="Hide Issue">
+        <i class="fas fa-eye-slash text-[9px]"></i>
+        <span>Hide</span>
+      </button>
+    `;
+
     card.innerHTML = `
       <div class="flex items-start justify-between">
         <span class="${textClass} font-semibold flex items-center">
@@ -1356,7 +1454,8 @@ function validateScriptsAndLevel() {
         </span>
       </div>
       <p class="text-gray-300 leading-normal text-xs font-sans">${p.message}</p>
-      <div class="pt-1 flex justify-end">
+      <div class="pt-1 flex items-center justify-end space-x-1.5">
+        ${hideUnhideBtn}
         <button class="btn-explain-ai px-2 py-0.5 text-[9px] bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-700/60 rounded flex items-center space-x-1 font-semibold transition" title="Explain with AI">
           <i class="fas fa-brain text-[9px]"></i>
           <span>Explain with AI</span>
@@ -1364,7 +1463,6 @@ function validateScriptsAndLevel() {
       </div>
     `;
 
-    // Ensure double-clicking or clicking works properly via inline binding or event listener
     if (clickHandler) {
       card.addEventListener("click", () => {
         if (p.coordinate) {
@@ -1372,6 +1470,26 @@ function validateScriptsAndLevel() {
         } else if (p.paletteId) {
           window.navigateToPaletteBlock(p.paletteId);
         }
+      });
+    }
+
+    const btnHide = card.querySelector(".btn-hide-problem");
+    if (btnHide) {
+      btnHide.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!state.hiddenProblems.includes(p.key)) {
+          state.hiddenProblems.push(p.key);
+        }
+        validateScriptsAndLevel();
+      });
+    }
+
+    const btnUnhide = card.querySelector(".btn-unhide-problem");
+    if (btnUnhide) {
+      btnUnhide.addEventListener("click", (e) => {
+        e.stopPropagation();
+        state.hiddenProblems = state.hiddenProblems.filter(k => k !== p.key);
+        validateScriptsAndLevel();
       });
     }
 
@@ -1825,6 +1943,62 @@ function setupEventListeners() {
     state.runtimeErrors = [];
     validateScriptsAndLevel();
   });
+
+  // Problems Panel Filter Buttons
+  const btnFilterAll = document.getElementById("btn-problems-filter-all");
+  const btnFilterErrors = document.getElementById("btn-problems-filter-errors");
+  const btnFilterWarnings = document.getElementById("btn-problems-filter-warnings");
+  const btnFilterHidden = document.getElementById("btn-problems-filter-hidden");
+
+  if (btnFilterAll) {
+    btnFilterAll.addEventListener("click", () => {
+      state.problemsFilter = "all";
+      validateScriptsAndLevel();
+    });
+  }
+  if (btnFilterErrors) {
+    btnFilterErrors.addEventListener("click", () => {
+      state.problemsFilter = "error";
+      validateScriptsAndLevel();
+    });
+  }
+  if (btnFilterWarnings) {
+    btnFilterWarnings.addEventListener("click", () => {
+      state.problemsFilter = "warning";
+      validateScriptsAndLevel();
+    });
+  }
+  if (btnFilterHidden) {
+    btnFilterHidden.addEventListener("click", () => {
+      state.problemsFilter = "hidden";
+      validateScriptsAndLevel();
+    });
+  }
+
+  // Toggle Collapse/Expand Problems Panel
+  const btnToggleProblems = document.getElementById("btn-toggle-problems-panel");
+  if (btnToggleProblems) {
+    btnToggleProblems.addEventListener("click", () => {
+      state.problemsPanelCollapsed = !state.problemsPanelCollapsed;
+      const body = document.getElementById("problems-panel-body");
+      const chevron = document.getElementById("problems-panel-chevron");
+      if (body) {
+        if (state.problemsPanelCollapsed) {
+          body.classList.add("hidden");
+          if (chevron) {
+            chevron.classList.remove("fa-chevron-down");
+            chevron.classList.add("fa-chevron-up");
+          }
+        } else {
+          body.classList.remove("hidden");
+          if (chevron) {
+            chevron.classList.remove("fa-chevron-up");
+            chevron.classList.add("fa-chevron-down");
+          }
+        }
+      }
+    });
+  }
 
   // Global Level configs
   document.getElementById("input-grid-cols").addEventListener("change", (e) => {
