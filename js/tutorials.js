@@ -538,6 +538,67 @@ const TUTORIALS = [
         }
       }
     ]
+  },
+  {
+    id: "ww1_game",
+    title: "13. WW1 Trench Warfare",
+    desc: "Navigate through enemy trenches, dodge spike traps and hostile soldier patrols, and reach the command post portal.",
+    steps: [
+      {
+        title: "Switch Genre to Top-Down",
+        check: () => {
+          return state.genre === "topdown";
+        }
+      },
+      {
+        title: "Paint 8 Brick Wall Trenches (🧱)",
+        check: () => {
+          let count = 0;
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "brick") {
+                count++;
+              }
+            }
+          }
+          return count >= 8;
+        }
+      },
+      {
+        title: "Paint 2 Spike Traps (⚠️)",
+        check: () => {
+          let count = 0;
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "spikes") {
+                count++;
+              }
+            }
+          }
+          return count >= 2;
+        }
+      },
+      {
+        title: "Place a Player Spawn (🧙)",
+        check: () => {
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "player_spawn") {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+      },
+      {
+        title: "Reach Command Portal & Win!",
+        check: () => {
+          const winBanner = document.getElementById("game-win-banner");
+          return winBanner && !winBanner.classList.contains("hidden");
+        }
+      }
+    ]
   }
 ];
 
@@ -967,6 +1028,35 @@ function selectTutorial(idx) {
     const g = getBlockById;
     state.grid[14][2] = g("player_spawn");
     state.grid[14][28] = g("portal");
+  } else if (idx === 12) {
+    // WW1 Trench Warfare
+    state.genre = "topdown";
+    state.gravity = 0;
+    state.speed = 4.0;
+    const g = getBlockById;
+    // Outer border walls
+    for (let c = 0; c < 30; c++) {
+      state.grid[0][c] = g("brick");
+      state.grid[15][c] = g("brick");
+    }
+    for (let r = 0; r < 16; r++) {
+      state.grid[r][0] = g("brick");
+      state.grid[r][29] = g("brick");
+    }
+    // Trench corridors
+    for (let r = 2; r < 14; r += 3) {
+      for (let c = 2; c < 28; c += 2) {
+        state.grid[r][c] = g("brick");
+      }
+    }
+    // Pre-place player spawn, key, locked door, goal portal, spikes & patrol enemy
+    state.grid[1][2] = g("player_spawn");
+    state.grid[14][15] = g("key");
+    state.grid[1][27] = g("locked_door");
+    state.grid[1][28] = g("portal");
+    state.grid[5][10] = g("spikes");
+    state.grid[8][18] = g("spikes");
+    state.grid[4][20] = g("patrol_enemy");
   } else if (TUTORIALS[idx] && TUTORIALS[idx].proceduralConfig) {
     // PROCEDURAL GENERATED SETUP
     const config = TUTORIALS[idx].proceduralConfig;
@@ -1115,13 +1205,14 @@ function getDifficultyBadge(idx) {
     { label: "Expert", bg: "bg-amber-950", text: "text-amber-300" },           // 9. Custom Block Designer
     { label: "Advanced", bg: "bg-emerald-950", text: "text-emerald-300" },     // 10. Gravity & Speed Sandbox
     { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" },       // 11. AI Bot Integration
-    { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" }        // 12. Sprite Styling Studio
+    { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" },       // 12. Sprite Styling Studio
+    { label: "Expert", bg: "bg-red-950", text: "text-red-300" }                // 13. WW1 Trench Warfare
   ];
   return difficulties[idx] || { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" };
 }
 
 function getTutorialEmoji(idx) {
-  const emojis = ["🎨", "🔥", "🔑", "🧱", "🍄", "👾", "🍄", "🪙", "🛠️", "🪐", "🤖", "🎨"];
+  const emojis = ["🎨", "🔥", "🔑", "🧱", "🍄", "👾", "🍄", "🪙", "🛠️", "🪐", "🤖", "🎨", "🪖"];
   return emojis[idx] || "📚";
 }
 
