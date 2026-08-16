@@ -44,7 +44,7 @@
     }
   </style>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col overflow-hidden selection:bg-purple-600 selection:text-white">
+<body class="bg-gray-950 text-gray-100 min-h-screen lg:h-screen flex flex-col overflow-y-auto lg:overflow-hidden selection:bg-purple-600 selection:text-white">
 
   <!-- Mobile Drawer Backdrop Overlay -->
   <div id="mobile-drawer-backdrop" class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden transition-opacity duration-300"></div>
@@ -245,7 +245,7 @@
   </header>
 
   <!-- MAIN WORKSPACE -->
-  <main class="flex-1 flex overflow-hidden">
+  <main class="flex-1 flex overflow-visible lg:overflow-hidden">
 
     <!-- LEFT PANEL: TILE PALETTE & DRAWING TOOLS -->
     <section id="left-palette" class="fixed lg:relative inset-y-0 left-0 w-64 bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden z-50 -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
