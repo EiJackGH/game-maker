@@ -556,7 +556,7 @@ function updateMobileButtonUI() {
     if (btn) {
       btn.disabled = true;
       btn.classList.add("opacity-50", "cursor-not-allowed");
-      btn.title = "Unavailable to turn on the mobile mode.";
+      btn.title = "Mobile Mode Unavailable";
     }
   } else {
     if (btn) {
@@ -1287,17 +1287,6 @@ function validateScriptsAndLevel() {
       message: `Genre is set to Top-Down, but Gravity is configured to a non-zero value (${state.gravity}). This can cause unintended drift/movement issues.`,
       group: "topdown_gravity",
       groupName: "Top-Down Mode Gravity Configuration"
-    });
-  }
-
-  // Check for Mobile Mode status on computer or level with computer block
-  if (!state.mobileMode && checkHasComputer()) {
-    rawProblems.push({
-      type: "warning",
-      source: "level",
-      message: "Unavailable to turn on the mobile mode.",
-      group: "mobile_mode_off",
-      groupName: "Mobile Mode Configuration"
     });
   }
 
