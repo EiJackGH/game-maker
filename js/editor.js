@@ -404,6 +404,7 @@ function getDefaultBlockVisuals() {
       }
     }
   });
+
   return visuals;
 }
 
@@ -1907,6 +1908,8 @@ function setupEventListeners() {
     toggleRightPanelTab("files");
   });
 
+  setupJsAutocomplete();
+
   // Local File Manager actions
   document.getElementById("btn-file-save").addEventListener("click", () => {
     const input = document.getElementById("file-name-input");
@@ -3376,6 +3379,196 @@ function floodFill(startR, startC) {
       }
     }
   }
+}
+
+// Custom JS Autocomplete Implementation
+function setupJsAutocomplete() {
+  const textarea = document.getElementById("prop-tile-js");
+  const dropdown = document.getElementById("js-autocomplete-dropdown");
+  if (!textarea || !dropdown || textarea.dataset.autocompleteInit) return;
+  textarea.dataset.autocompleteInit = "true";
+
+  const AUTOCOMPLETE_ITEMS = [
+    // Top-level sandbox objects
+    { label: "player", insert: "player", desc: "Player object (position, velocity, state)" },
+    { label: "game", insert: "game", desc: "Game controller API (addCoins, harm, triggerWin)" },
+    { label: "sound", insert: "sound", desc: "Sound effects API (play)" },
+    { label: "tile", insert: "tile", desc: "Current triggered tile instance" },
+    { label: "state", insert: "state", desc: "Global level settings & physics" },
+
+    // player members
+    { prefix: "player.", label: "player.vx", insert: "player.vx", desc: "Horizontal velocity" },
+    { prefix: "player.", label: "player.vy", insert: "player.vy", desc: "Vertical velocity" },
+    { prefix: "player.", label: "player.x", insert: "player.x", desc: "X position on canvas" },
+    { prefix: "player.", label: "player.y", insert: "player.y", desc: "Y position on canvas" },
+    { prefix: "player.", label: "player.w", insert: "player.w", desc: "Width of player" },
+    { prefix: "player.", label: "player.h", insert: "player.h", desc: "Height of player" },
+    { prefix: "player.", label: "player.facing", insert: "player.facing", desc: "Facing direction ('left'|'right')" },
+    { prefix: "player.", label: "player.grounded", insert: "player.grounded", desc: "Boolean: on ground or in air" },
+    { prefix: "player.", label: "player.emoji", insert: "player.emoji", desc: "Player avatar emoji" },
+
+    // game members
+    { prefix: "game.", label: "game.addCoins(n)", insert: "game.addCoins(5);", desc: "Add score/coins" },
+    { prefix: "game.", label: "game.harm(n)", insert: "game.harm(20);", desc: "Damage player health" },
+    { prefix: "game.", label: "game.triggerWin()", insert: "game.triggerWin();", desc: "Complete level instantly" },
+
+    // sound members
+    { prefix: "sound.", label: "sound.play('jump')", insert: "sound.play('jump');", desc: "Play jump SFX" },
+    { prefix: "sound.", label: "sound.play('coin')", insert: "sound.play('coin');", desc: "Play coin SFX" },
+    { prefix: "sound.", label: "sound.play('hit')", insert: "sound.play('hit');", desc: "Play hit SFX" },
+    { prefix: "sound.", label: "sound.play('win')", insert: "sound.play('win');", desc: "Play victory SFX" },
+
+    // tile members
+    { prefix: "tile.", label: "tile.name", insert: "tile.name", desc: "Tile label/name" },
+    { prefix: "tile.", label: "tile.color", insert: "tile.color", desc: "Tile hex color" },
+    { prefix: "tile.", label: "tile.solid", insert: "tile.solid", desc: "Boolean: solid obstacle" },
+    { prefix: "tile.", label: "tile.damage", insert: "tile.damage", desc: "Damage on touch" },
+    { prefix: "tile.", label: "tile.score", insert: "tile.score", desc: "Coin/score value" },
+    { prefix: "tile.", label: "tile.emoji", insert: "tile.emoji", desc: "Tile display emoji" },
+
+    // state members
+    { prefix: "state.", label: "state.gravity", insert: "state.gravity", desc: "Global gravity value" },
+    { prefix: "state.", label: "state.speed", insert: "state.speed", desc: "Global player movement speed" },
+    { prefix: "state.", label: "state.cols", insert: "state.cols", desc: "Level grid columns" },
+    { prefix: "state.", label: "state.rows", insert: "state.rows", desc: "Level grid rows" }
+  ];
+
+  let activeIndex = 0;
+  let matches = [];
+  let tokenInfo = null;
+
+  function getTokenInfo() {
+    const text = textarea.value;
+    const cursorPos = textarea.selectionStart;
+    const leftText = text.slice(0, cursorPos);
+    // Find the word/token preceding cursor
+    const match = leftText.match(/([a-zA-Z0-9_\.]+)$/);
+    if (!match) return null;
+
+    const token = match[1];
+    const tokenStart = cursorPos - token.length;
+    return {
+      token,
+      tokenStart,
+      tokenEnd: cursorPos
+    };
+  }
+
+  function updateSuggestions() {
+    tokenInfo = getTokenInfo();
+    if (!tokenInfo || tokenInfo.token.length < 1) {
+      hideDropdown();
+      return;
+    }
+
+    const t = tokenInfo.token.toLowerCase();
+
+    // Check if token has dot
+    const hasDot = t.includes(".");
+    if (hasDot) {
+      const dotIndex = t.indexOf(".");
+      const objPrefix = t.slice(0, dotIndex + 1); // e.g. "player."
+      matches = AUTOCOMPLETE_ITEMS.filter(item => {
+        if (!item.prefix) return false;
+        if (item.prefix.toLowerCase() !== objPrefix) return false;
+        return item.label.toLowerCase().includes(t);
+      });
+    } else {
+      matches = AUTOCOMPLETE_ITEMS.filter(item => {
+        if (item.prefix) return false; // top-level items only
+        return item.label.toLowerCase().startsWith(t);
+      });
+    }
+
+    if (matches.length === 0) {
+      hideDropdown();
+      return;
+    }
+
+    activeIndex = 0;
+    renderDropdown();
+  }
+
+  function renderDropdown() {
+    dropdown.innerHTML = "";
+    matches.forEach((item, idx) => {
+      const option = document.createElement("div");
+      option.className = `p-2 cursor-pointer flex items-center justify-between transition ${idx === activeIndex ? 'bg-purple-900/60 text-purple-100 font-bold' : 'hover:bg-gray-800 text-gray-300'}`;
+      option.innerHTML = `
+        <span class="text-indigo-300 font-mono">${item.label}</span>
+        <span class="text-[9px] text-gray-400 font-sans italic ml-2">${item.desc}</span>
+      `;
+      option.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        applySuggestion(item);
+      });
+      dropdown.appendChild(option);
+    });
+    dropdown.classList.remove("hidden");
+  }
+
+  function applySuggestion(item) {
+    if (!tokenInfo) return;
+    const text = textarea.value;
+    const before = text.slice(0, tokenInfo.tokenStart);
+    const after = text.slice(tokenInfo.tokenEnd);
+
+    const replacement = item.insert;
+    textarea.value = before + replacement + after;
+
+    const newCursor = tokenInfo.tokenStart + replacement.length;
+    textarea.setSelectionRange(newCursor, newCursor);
+
+    // Trigger input event to update state & localStorage
+    const event = new Event("input", { bubbles: true });
+    textarea.dispatchEvent(event);
+
+    hideDropdown();
+    textarea.focus();
+  }
+
+  function hideDropdown() {
+    dropdown.classList.add("hidden");
+    matches = [];
+    activeIndex = 0;
+  }
+
+  textarea.addEventListener("input", () => {
+    updateSuggestions();
+  });
+
+  textarea.addEventListener("keydown", (e) => {
+    if (dropdown.classList.contains("hidden") || matches.length === 0) {
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % matches.length;
+      renderDropdown();
+      // Scroll active item into view
+      const activeEl = dropdown.children[activeIndex];
+      if (activeEl) activeEl.scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + matches.length) % matches.length;
+      renderDropdown();
+      const activeEl = dropdown.children[activeIndex];
+      if (activeEl) activeEl.scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      if (matches[activeIndex]) {
+        applySuggestion(matches[activeIndex]);
+      }
+    } else if (e.key === "Escape") {
+      hideDropdown();
+    }
+  });
+
+  textarea.addEventListener("blur", () => {
+    // Delay hiding dropdown to allow click events to register
+    setTimeout(hideDropdown, 200);
+  });
 }
 
 // Run init on window load
