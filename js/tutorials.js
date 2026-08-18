@@ -599,6 +599,47 @@ const TUTORIALS = [
         }
       }
     ]
+  },
+  {
+    id: "quickstart_custom_js",
+    title: "14. Quickstart in Custom Javascript",
+    desc: "Learn how to program custom behavior using JavaScript logic on blocks and test your custom scripts in Play Mode.",
+    steps: [
+      {
+        title: "Inspect a block or tile",
+        check: () => {
+          const activeBlock = getInspectedBlock();
+          return activeBlock !== null;
+        }
+      },
+      {
+        title: "Write Custom JS code for inspected block",
+        check: () => {
+          const activeBlock = getInspectedBlock();
+          return activeBlock && typeof activeBlock.js === "string" && activeBlock.js.trim().length > 0;
+        }
+      },
+      {
+        title: "Place a Player Spawn (🧙)",
+        check: () => {
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "player_spawn") {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+      },
+      {
+        title: "Test Custom JS in Play Mode & Win!",
+        check: () => {
+          const winBanner = document.getElementById("game-win-banner");
+          return winBanner && !winBanner.classList.contains("hidden");
+        }
+      }
+    ]
   }
 ];
 
@@ -1057,6 +1098,17 @@ function selectTutorial(idx) {
     state.grid[5][10] = g("spikes");
     state.grid[8][18] = g("spikes");
     state.grid[4][20] = g("patrol_enemy");
+  } else if (idx === 13) {
+    // Quickstart in Custom Javascript
+    state.genre = "platformer";
+    state.gravity = 0.5;
+    state.speed = 4.0;
+    const g = getBlockById;
+    for (let c = 0; c < 30; c++) {
+      state.grid[15][c] = g("ground");
+    }
+    state.grid[14][2] = g("player_spawn");
+    state.grid[14][28] = g("portal");
   } else if (TUTORIALS[idx] && TUTORIALS[idx].proceduralConfig) {
     // PROCEDURAL GENERATED SETUP
     const config = TUTORIALS[idx].proceduralConfig;
@@ -1206,13 +1258,14 @@ function getDifficultyBadge(idx) {
     { label: "Advanced", bg: "bg-emerald-950", text: "text-emerald-300" },     // 10. Gravity & Speed Sandbox
     { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" },       // 11. AI Bot Integration
     { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" },       // 12. Sprite Styling Studio
-    { label: "Expert", bg: "bg-red-950", text: "text-red-300" }                // 13. WW1 Trench Warfare
+    { label: "Expert", bg: "bg-red-950", text: "text-red-300" },               // 13. WW1 Trench Warfare
+    { label: "Coding", bg: "bg-indigo-950", text: "text-indigo-300" }          // 14. Quickstart in Custom Javascript
   ];
   return difficulties[idx] || { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" };
 }
 
 function getTutorialEmoji(idx) {
-  const emojis = ["🎨", "🔥", "🔑", "🧱", "🍄", "👾", "🍄", "🪙", "🛠️", "🪐", "🤖", "🎨", "🪖"];
+  const emojis = ["🎨", "🔥", "🔑", "🧱", "🍄", "👾", "🍄", "🪙", "🛠️", "🪐", "🤖", "🎨", "🪖", "💻"];
   return emojis[idx] || "📚";
 }
 
