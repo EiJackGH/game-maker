@@ -2876,7 +2876,7 @@ function handleAiSendPrompt() {
   }
 
   const pLower = prompt.toLowerCase();
-  const levelKeywords = ["level", "maze", "castle", "sky", "labyrinth", "parkour", "doom", "spiral", "map", "dungeon", "spooky"];
+  const levelKeywords = ["level", "maze", "castle", "sky", "labyrinth", "parkour", "doom", "spiral", "map", "dungeon", "spooky", "debug"];
   const isLevelPrompt = levelKeywords.some(kw => pLower.includes(kw));
 
   if (isLevelPrompt) {
@@ -3258,7 +3258,42 @@ function generateAiLevel(prompt) {
 
   const g = getBlockById;
 
-  if (prompt.includes("maze") || prompt.includes("spiral") || prompt.includes("labyrinth")) {
+  if (prompt.includes("debug")) {
+    aiLog("Constructing procedural Debug Sandbox level...");
+    state.genre = "platformer";
+    state.gravity = 0.5;
+    state.speed = 4;
+    syncFormControls();
+
+    // Fill floor with solid bricks
+    for (let c = 0; c < state.cols; c++) {
+      state.grid[state.rows - 1][c] = g("brick");
+    }
+
+    // Player spawn
+    state.grid[state.rows - 2][2] = g("player_spawn");
+
+    // Platforms & physics elements
+    state.grid[state.rows - 2][5] = g("bouncy_pad");
+    state.grid[state.rows - 2][7] = g("stone");
+    state.grid[state.rows - 3][7] = g("coin");
+
+    // Hazards
+    state.grid[state.rows - 1][10] = g("lava");
+    state.grid[state.rows - 1][11] = g("lava");
+    state.grid[state.rows - 2][13] = g("spikes");
+
+    // Interactives: Key, locked door, goal portal
+    state.grid[state.rows - 2][16] = g("key");
+    state.grid[state.rows - 2][20] = g("locked_door");
+    state.grid[state.rows - 2][22] = g("portal");
+
+    // Enemy actor bot
+    state.grid[state.rows - 2][18] = g("ai_agent");
+
+    aiLog("Debug Sandbox level successfully generated!", "success");
+
+  } else if (prompt.includes("maze") || prompt.includes("spiral") || prompt.includes("labyrinth")) {
     aiLog("Constructing procedural Top-Down labyrinth layout...");
     state.genre = "topdown";
     state.gravity = 0;
