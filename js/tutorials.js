@@ -640,6 +640,52 @@ const TUTORIALS = [
         }
       }
     ]
+  },
+  {
+    id: "snowball_easter_egg",
+    title: "15. How to Get a Snowball Easter Egg",
+    desc: "Discover the secret Snowball easter egg! Create or place a Snowball block, inspect its properties, and test it in Play Mode.",
+    steps: [
+      {
+        title: "Create or Select a Snowball block (❄️)",
+        check: () => {
+          const activeBlock = getBlockById(state.activeBlockId);
+          return (
+            state.activeBlockId === "snowball" ||
+            (activeBlock && (activeBlock.emoji === "❄️" || activeBlock.emoji === "☃️" || (activeBlock.name && activeBlock.name.toLowerCase().includes("snowball"))))
+          );
+        }
+      },
+      {
+        title: "Paint at least 3 Snowball blocks (❄️)",
+        check: () => {
+          let count = 0;
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              const tile = state.grid[r][c];
+              if (tile && (tile.id === "snowball" || tile.emoji === "❄️" || tile.emoji === "☃️" || (tile.name && tile.name.toLowerCase().includes("snowball")))) {
+                count++;
+              }
+            }
+          }
+          return count >= 3;
+        }
+      },
+      {
+        title: "Inspect Snowball block properties",
+        check: () => {
+          const activeBlock = getInspectedBlock();
+          return activeBlock && (activeBlock.id === "snowball" || activeBlock.emoji === "❄️" || activeBlock.emoji === "☃️" || (activeBlock.name && activeBlock.name.toLowerCase().includes("snowball")));
+        }
+      },
+      {
+        title: "Test Snowball level in Play Mode & Win!",
+        check: () => {
+          const winBanner = document.getElementById("game-win-banner");
+          return winBanner && !winBanner.classList.contains("hidden");
+        }
+      }
+    ]
   }
 ];
 
@@ -1109,6 +1155,40 @@ function selectTutorial(idx) {
     }
     state.grid[14][2] = g("player_spawn");
     state.grid[14][28] = g("portal");
+  } else if (idx === 14) {
+    // How to Get a Snowball Easter Egg
+    state.genre = "platformer";
+    state.gravity = 0.5;
+    state.speed = 4.0;
+    const g = getBlockById;
+    for (let c = 0; c < 30; c++) {
+      state.grid[15][c] = g("ground");
+    }
+    state.grid[14][2] = g("player_spawn");
+    state.grid[14][28] = g("portal");
+
+    // Add a pre-configured Snowball custom block if not existing
+    if (!state.customBlocks["snowball"]) {
+      state.customBlocks["snowball"] = {
+        id: "snowball",
+        name: "Snowball Easter Egg",
+        category: "collectible",
+        color: "#38bdf8",
+        emoji: "❄️",
+        solid: false,
+        damage: 0,
+        score: 10,
+        scripts: [
+          { event: "collide", action: "add_score", params: { amount: 10 } },
+          { event: "collide", action: "play_sound", params: { type: "coin" } },
+          { event: "collide", action: "destroy_tile", params: {} }
+        ],
+        js: "// Secret Snowball Easter Egg!\nsound.play('win');\ngame.addCoins(10);"
+      };
+      buildPalettes();
+    }
+    // Pre-place a snowball on the grid as a starter
+    state.grid[12][15] = JSON.parse(JSON.stringify(state.customBlocks["snowball"]));
   } else if (TUTORIALS[idx] && TUTORIALS[idx].proceduralConfig) {
     // PROCEDURAL GENERATED SETUP
     const config = TUTORIALS[idx].proceduralConfig;
@@ -1259,13 +1339,14 @@ function getDifficultyBadge(idx) {
     { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" },       // 11. AI Bot Integration
     { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" },       // 12. Sprite Styling Studio
     { label: "Expert", bg: "bg-red-950", text: "text-red-300" },               // 13. WW1 Trench Warfare
-    { label: "Coding", bg: "bg-indigo-950", text: "text-indigo-300" }          // 14. Quickstart in Custom Javascript
+    { label: "Coding", bg: "bg-indigo-950", text: "text-indigo-300" },         // 14. Quickstart in Custom Javascript
+    { label: "Secret", bg: "bg-cyan-950", text: "text-cyan-300" }              // 15. How to Get a Snowball Easter Egg
   ];
   return difficulties[idx] || { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" };
 }
 
 function getTutorialEmoji(idx) {
-  const emojis = ["🎨", "🔥", "🔑", "🧱", "🍄", "👾", "🍄", "🪙", "🛠️", "🪐", "🤖", "🎨", "🪖", "💻"];
+  const emojis = ["🎨", "🔥", "🔑", "🧱", "🍄", "👾", "🍄", "🪙", "🛠️", "🪐", "🤖", "🎨", "🪖", "💻", "❄️"];
   return emojis[idx] || "📚";
 }
 
