@@ -962,6 +962,139 @@ function getProblemKey(p) {
   return `${p.type}_${p.group || 'nogroup'}_${loc}_${p.message}`;
 }
 
+// Helper function for deep static analysis of Custom JavaScript code snippets
+function validateCustomJSCode(code, isPaletteBlock, targetMeta, rawProblems) {
+  const prefix = isPaletteBlock ? `Custom Palette Block [${targetMeta.tileName}]` : `Tile "${targetMeta.tileName}"`;
+  const syntaxGroup = isPaletteBlock ? "palette_js_syntax_error" : "tile_js_syntax_error";
+  const syntaxGroupName = isPaletteBlock ? "Custom Palette Block Syntax Errors" : "Tile Custom JS Syntax Errors";
+
+  // 1. Check syntax errors
+  try {
+    new Function("player", "tile", "game", "sound", code);
+  } catch (err) {
+    rawProblems.push({
+      type: "error",
+      source: "code",
+      message: `Syntax error in ${prefix} JS: ${err.message}`,
+      ...targetMeta,
+      group: syntaxGroup,
+      groupName: syntaxGroupName
+    });
+  }
+
+  // 2. Check if custom JS is empty (comments/spaces only)
+  const codeWithoutComments = code.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').trim();
+  if (codeWithoutComments.length === 0) {
+    rawProblems.push({
+      type: "warning",
+      source: "code",
+      message: `Custom JS for ${prefix} contains no executable code (only spaces or comments).`,
+      ...targetMeta,
+      group: "empty_js",
+      groupName: "Empty Custom JS"
+    });
+    return;
+  }
+
+  // 3. Check for prohibited / unsafe global variables or DOM operations
+  const prohibitedGlobals = [
+    { pattern: /\bdocument\b/, name: "document" },
+    { pattern: /\bwindow\b/, name: "window" },
+    { pattern: /\blocalStorage\b/, name: "localStorage text/storage access" },
+    { pattern: /\bfetch\b/, name: "fetch API" },
+    { pattern: /\bXMLHttpRequest\b/, name: "XMLHttpRequest" },
+    { pattern: /\beval\s*\(/, name: "eval()" },
+    { pattern: /\bsetTimeout\s*\(/, name: "setTimeout()" },
+    { pattern: /\bsetInterval\s*\(/, name: "setInterval()" }
+  ];
+
+  const prohibitedGroup = isPaletteBlock ? "palette_js_prohibited_globals" : "tile_js_prohibited_globals";
+  const prohibitedGroupName = isPaletteBlock ? "Palette Block Prohibited JS Globals" : "Tile JS Prohibited Globals";
+
+  prohibitedGlobals.forEach(item => {
+    if (item.pattern.test(codeWithoutComments)) {
+      rawProblems.push({
+        type: "warning",
+        source: "code",
+        message: `${prefix} JS references "${item.name}". Accessing raw browser globals inside custom scripts is restricted.`,
+        ...targetMeta,
+        group: prohibitedGroup,
+        groupName: prohibitedGroupName
+      });
+    }
+  });
+
+  // 4. Check for infinite loops / blocking loop constructs
+  const loopGroup = isPaletteBlock ? "palette_js_infinite_loop" : "tile_js_infinite_loop";
+  const loopGroupName = isPaletteBlock ? "Palette Block Infinite Loop Risk" : "Tile JS Infinite Loop Risk";
+
+  if (/\bwhile\s*\(\s*true\s*\)|\bfor\s*\(\s*;\s*;\s*\)/.test(codeWithoutComments)) {
+    rawProblems.push({
+      type: "error",
+      source: "code",
+      message: `${prefix} JS contains an infinite loop pattern (e.g. while(true)), which will freeze the browser tab.`,
+      ...targetMeta,
+      group: loopGroup,
+      groupName: loopGroupName
+    });
+  }
+
+  // 5. Check for unknown or misspelled sandbox properties/variables
+  const allowedIdent = new Set([
+    // Sandbox arguments & helper objects
+    "player", "tile", "game", "sound", "state", "retroAudio", "aiLog",
+    // Standard JS safe built-ins / keywords
+    "let", "const", "var", "function", "return", "if", "else", "for", "while", "do",
+    "switch", "case", "default", "break", "continue", "try", "catch", "throw", "finally",
+    "typeof", "instanceof", "new", "this", "true", "false", "null", "undefined",
+    "Math", "Number", "String", "Boolean", "Array", "Object", "JSON", "parseInt", "parseFloat",
+    "isNaN", "isFinite", "console", "encodeURIComponent", "decodeURIComponent"
+  ]);
+
+  // Track locally declared variables (let, const, var, function)
+  const cleanCode = codeWithoutComments.replace(/["'](?:[^"'\\]|\\.)*["']/g, ''); // strip string literals
+
+  // Find declarations: e.g., let x, const y, var z, function foo
+  const localDeclarations = new Set();
+  const declRegex = /\b(?:let|const|var|function)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+  let declMatch;
+  while ((declMatch = declRegex.exec(cleanCode)) !== null) {
+    localDeclarations.add(declMatch[1]);
+  }
+
+  // Tokenize using regex matching index to accurately inspect preceding character
+  const identRegex = /(^|[^\w$.])([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+  const unknownGroup = isPaletteBlock ? "palette_js_unknown_var" : "tile_js_unknown_var";
+  const unknownGroupName = isPaletteBlock ? "Palette Block Unknown Variables" : "Tile JS Unknown Variables";
+
+  const detectedUnknowns = new Set();
+  let match;
+
+  while ((match = identRegex.exec(cleanCode)) !== null) {
+    const ident = match[2];
+    const matchIndex = match.index + match[1].length;
+    const charBefore = matchIndex > 0 ? cleanCode[matchIndex - 1] : '';
+
+    // Ignore property accesses (preceded by dot)
+    if (charBefore === '.') continue;
+
+    if (!allowedIdent.has(ident) && !localDeclarations.has(ident) && !detectedUnknowns.has(ident)) {
+      detectedUnknowns.add(ident);
+    }
+  }
+
+  detectedUnknowns.forEach(unknownIdent => {
+    rawProblems.push({
+      type: "warning",
+      source: "code",
+      message: `${prefix} JS references unrecognized top-level variable or function "${unknownIdent}".`,
+      ...targetMeta,
+      group: unknownGroup,
+      groupName: unknownGroupName
+    });
+  });
+}
+
 // Real-time Static Analysis & Level Validation Engine
 function validateScriptsAndLevel() {
   const rawProblems = [];
@@ -993,37 +1126,13 @@ function validateScriptsAndLevel() {
           hasSolids = true;
         }
 
-        // 1. Check custom JS syntax for grid tiles
+        // 1. Static code analysis for tile Custom JS
         if (tile.js && tile.js.trim().length > 0) {
-          try {
-            new Function("player", "tile", "game", "sound", tile.js);
-          } catch (err) {
-            rawProblems.push({
-              type: "error",
-              source: "code",
-              message: `Syntax error in tile custom JS: ${err.message}`,
-              coordinate: { r, c },
-              tileId: tile.id,
-              tileName: tile.name,
-              group: "tile_js_syntax_error",
-              groupName: "Tile Custom JS Syntax Errors"
-            });
-          }
-
-          // Check if custom JS is empty (comments/spaces only)
-          const codeWithoutComments = tile.js.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').trim();
-          if (codeWithoutComments.length === 0) {
-            rawProblems.push({
-              type: "warning",
-              source: "code",
-              message: `Custom JS for tile "${tile.name}" contains no executable code (only spaces or comments).`,
-              coordinate: { r, c },
-              tileId: tile.id,
-              tileName: tile.name,
-              group: "empty_js",
-              groupName: "Empty Custom JS"
-            });
-          }
+          validateCustomJSCode(tile.js, false, {
+            coordinate: { r, c },
+            tileId: tile.id,
+            tileName: tile.name
+          }, rawProblems);
         }
 
         // 2. Warn if tile script triggers are set but missing actions, or have invalid params
@@ -1163,36 +1272,15 @@ function validateScriptsAndLevel() {
     }
   }
 
-  // Scan Custom Palette Blocks for JS syntax errors too
+  // Scan Custom Palette Blocks for JS static code issues too
   Object.keys(state.customBlocks).forEach(id => {
     const block = state.customBlocks[id];
     if (block) {
       if (block.js && block.js.trim().length > 0) {
-        try {
-          new Function("player", "tile", "game", "sound", block.js);
-        } catch (err) {
-          rawProblems.push({
-            type: "error",
-            source: "code",
-            message: `Syntax error in Custom Palette Block [${block.name}] JS: ${err.message}`,
-            paletteId: id,
-            tileName: block.name,
-            group: "palette_js_syntax_error",
-            groupName: "Custom Palette Block Syntax Errors"
-          });
-        }
-        const codeWithoutComments = block.js.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').trim();
-        if (codeWithoutComments.length === 0) {
-          rawProblems.push({
-            type: "warning",
-            source: "code",
-            message: `Custom JS for Palette Block [${block.name}] contains no executable code.`,
-            paletteId: id,
-            tileName: block.name,
-            group: "empty_js",
-            groupName: "Empty Custom JS"
-          });
-        }
+        validateCustomJSCode(block.js, true, {
+          paletteId: id,
+          tileName: block.name
+        }, rawProblems);
       }
       if (block.scripts) {
         block.scripts.forEach((script, idx) => {
@@ -2816,6 +2904,30 @@ function generateProblemExplanation(p) {
     return {
       explanation: "The custom JavaScript snippet attached to this block contains a syntax error, which prevents execution or may cause scripts to fail.",
       fix: "Select the block and inspect its Custom Javascript field in the Scripts tab. Ensure brackets, quotes, and syntax are valid (e.g. ending statements with semicolons).",
+      prompt: "speed pad script"
+    };
+  }
+
+  if (group === "tile_js_prohibited_globals" || group === "palette_js_prohibited_globals") {
+    return {
+      explanation: "Custom JS scripts run inside a restricted sandbox environment and cannot directly access raw browser globals (like document, window, or fetch).",
+      fix: "Use provided sandbox objects like `player`, `tile`, `game`, `sound`, and `state` instead of direct DOM/window manipulation.",
+      prompt: "speed pad script"
+    };
+  }
+
+  if (group === "tile_js_infinite_loop" || group === "palette_js_infinite_loop") {
+    return {
+      explanation: "The script contains an unconstrained infinite loop construct (like while(true)), which will cause the browser thread to freeze.",
+      fix: "Replace infinite loops with conditional updates, or rely on game frame ticks instead of blocking loops.",
+      prompt: "speed pad script"
+    };
+  }
+
+  if (group === "tile_js_unknown_var" || group === "palette_js_unknown_var") {
+    return {
+      explanation: "The script references a top-level variable or function name that is not recognized in the Custom JS sandbox context.",
+      fix: "Check for typos in variable names. Recognized sandbox parameters are `player`, `tile`, `game`, `sound`, and `state`.",
       prompt: "speed pad script"
     };
   }
