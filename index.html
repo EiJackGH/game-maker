@@ -618,6 +618,12 @@
               <i class="fas fa-check-circle"></i>
               <span>Apply Visual Changes</span>
             </button>
+
+            <!-- Delete Custom Block Button -->
+            <button id="btn-delete-custom-block-sprite" class="hidden w-full bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-800 rounded py-1.5 text-[10px] font-bold transition flex items-center justify-center space-x-1.5 shadow">
+              <i class="fas fa-trash-alt"></i>
+              <span>Delete Custom Block</span>
+            </button>
           </div>
         </div>
 
@@ -756,6 +762,10 @@
                 <button id="btn-prop-reset" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 rounded px-3 py-2 text-xs font-semibold flex items-center justify-center space-x-1.5 transition" title="Reset properties of the selected block to defaults">
                   <i class="fas fa-undo"></i>
                   <span>Set to Default</span>
+                </button>
+                <button id="btn-delete-custom-block-prop" class="hidden w-full bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-800 rounded px-3 py-2 text-xs font-semibold flex items-center justify-center space-x-1.5 transition" title="Delete this custom block type">
+                  <i class="fas fa-trash-alt"></i>
+                  <span>Delete Custom Block</span>
                 </button>
                 <div id="reset-status-msg" class="text-[10px] text-center font-mono transition duration-300 min-h-[16px]"></div>
               </div>
