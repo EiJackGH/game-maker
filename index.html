@@ -46,21 +46,23 @@
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen lg:h-screen flex flex-col overflow-y-auto lg:overflow-hidden selection:bg-purple-600 selection:text-white">
 
-  <!-- NoScript Fallback Message -->
+  <!-- NoScript Fallback Message Banner -->
   <noscript>
-    <div class="fixed inset-0 bg-gray-950/95 z-[100] flex items-center justify-center p-4">
-      <div class="bg-gray-900 border border-purple-900/60 rounded-2xl p-6 max-w-md w-full shadow-2xl text-center space-y-4">
-        <div class="bg-purple-900/40 p-3 rounded-full w-12 h-12 flex items-center justify-center mx-auto text-purple-400 text-xl border border-purple-700/50">
-          <i class="fas fa-exclamation-triangle"></i>
+    <div class="fixed top-0 inset-x-0 z-[100] bg-amber-950/95 border-b border-amber-600/50 p-3 px-4 md:px-6 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-amber-200" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background-color: #451a03; color: #fde68a; border-bottom: 2px solid #d97706; padding: 12px 20px; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);">
+      <div class="flex items-center space-x-3" style="display: flex; align-items: center; gap: 12px;">
+        <div class="p-2 bg-amber-900/80 rounded-lg text-amber-400 text-base flex-shrink-0" style="background-color: #78350f; color: #fbbf24; padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+          ⚠️
         </div>
-        <h2 class="text-lg font-bold text-white">JavaScript Required</h2>
-        <p class="text-xs text-gray-300 leading-relaxed font-sans">
-          Blocks Retro Game Maker requires JavaScript to run the editor, engine, and Canvas workspace. Please enable JavaScript in your browser settings.
-        </p>
-        <a href="noscript.html" class="inline-block px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-purple-900/30">
-          View Setup Instructions
-        </a>
+        <div>
+          <h2 class="font-bold text-xs md:text-sm text-amber-300" style="margin: 0; font-size: 14px; font-weight: bold; color: #fcd34d;">JavaScript Required</h2>
+          <p class="text-[11px] text-amber-200/90 font-sans" style="margin: 2px 0 0 0; font-size: 12px; color: #fde68a;">
+            Blocks Retro Game Maker requires JavaScript to run the level editor, physics engine, and Canvas workspace.
+          </p>
+        </div>
       </div>
+      <a href="noscript.html" class="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold text-xs rounded-lg transition shadow flex items-center space-x-2 whitespace-nowrap" style="background-color: #d97706; color: #ffffff; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: bold; text-decoration: none; white-space: nowrap; display: inline-block;">
+        <span>View Setup Instructions &rarr;</span>
+      </a>
     </div>
   </noscript>
 

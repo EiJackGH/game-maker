@@ -41,6 +41,23 @@ function generateStandaloneBundle() {
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-center overflow-hidden font-sans">
 
+  <!-- NoScript Fallback Message Banner -->
+  <noscript>
+    <div class="fixed top-0 inset-x-0 z-[100] bg-amber-950/95 border-b border-amber-600/50 p-3 px-4 md:px-6 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-amber-200" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background-color: #451a03; color: #fde68a; border-bottom: 2px solid #d97706; padding: 12px 20px; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);">
+      <div class="flex items-center space-x-3" style="display: flex; align-items: center; gap: 12px;">
+        <div class="p-2 bg-amber-900/80 rounded-lg text-amber-400 text-base flex-shrink-0" style="background-color: #78350f; color: #fbbf24; padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 16px;">
+          ⚠️
+        </div>
+        <div>
+          <h2 class="font-bold text-xs md:text-sm text-amber-300" style="margin: 0; font-size: 14px; font-weight: bold; color: #fcd34d;">JavaScript Required</h2>
+          <p class="text-[11px] text-amber-200/90 font-sans" style="margin: 2px 0 0 0; font-size: 12px; color: #fde68a;">
+            This exported standalone game requires JavaScript to run game physics, rendering, and controls.
+          </p>
+        </div>
+      </div>
+    </div>
+  </noscript>
+
   <!-- Connection Status Banner -->
   <div id="offline-banner" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden transition-all duration-300">
     <div id="offline-banner-content" class="bg-red-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 font-sans text-sm font-semibold border border-red-500 z-50">
