@@ -658,6 +658,61 @@ function getBlockById(id) {
   return null;
 }
 
+// Delete Custom Block
+function deleteCustomBlock(id) {
+  if (!state.customBlocks[id]) return;
+  const blockName = state.customBlocks[id].name || id;
+  if (!confirm(`Are you sure you want to delete the custom block "${blockName}"?`)) {
+    return;
+  }
+
+  delete state.customBlocks[id];
+
+  if (state.grid) {
+    for (let r = 0; r < state.rows; r++) {
+      if (!state.grid[r]) continue;
+      for (let c = 0; c < state.cols; c++) {
+        if (state.grid[r][c] && state.grid[r][c].id === id) {
+          state.grid[r][c] = null;
+        }
+      }
+    }
+  }
+
+  if (state.activeBlockId === id) {
+    state.activeBlockId = "ground";
+  }
+
+  if (state.inspectingPaletteId === id) {
+    state.inspectingPaletteId = null;
+  }
+
+  if (state.selectedCell) {
+    const cellTile = state.grid[state.selectedCell.r] && state.grid[state.selectedCell.r][state.selectedCell.c];
+    if (!cellTile) {
+      state.selectedCell = null;
+    }
+  }
+
+  if (state.selectedSpriteId === id) {
+    state.selectedSpriteId = null;
+    const editPanel = document.getElementById("sprite-edit-panel");
+    if (editPanel) editPanel.classList.add("hidden");
+  }
+
+  saveToLocalStorage();
+  buildPalettes();
+  updateSelectionPanel();
+  renderGrid();
+  renderSpritesTab();
+
+  if (typeof validateScriptsAndLevel === "function") {
+    validateScriptsAndLevel();
+  }
+}
+
+window.deleteCustomBlock = deleteCustomBlock;
+
 // Build Drawing Palette Categories
 function buildPalettes() {
   if (typeof validateScriptsAndLevel === "function") {
@@ -707,6 +762,20 @@ function buildPalettes() {
 
     // Sort into tabs
     if (state.customBlocks[block.id]) {
+      btn.innerHTML = `
+        <span class="text-lg">${block.emoji || '🧱'}</span>
+        <span class="truncate font-semibold text-gray-200 flex-1">${block.name}</span>
+        <button class="btn-delete-custom-block p-1 text-red-400 hover:text-red-300 rounded hover:bg-red-950/50 transition flex-shrink-0" title="Delete Custom Block">
+          <i class="fas fa-trash-alt text-[10px]"></i>
+        </button>
+      `;
+      const delBtn = btn.querySelector(".btn-delete-custom-block");
+      if (delBtn) {
+        delBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          deleteCustomBlock(block.id);
+        });
+      }
       customDiv.appendChild(btn);
     } else {
       switch (block.category) {
@@ -780,6 +849,19 @@ function updateSelectionPanel() {
   document.getElementById("prop-tile-solid").checked = !!activeBlock.solid;
   document.getElementById("prop-tile-damage").value = activeBlock.damage !== undefined ? activeBlock.damage : 0;
   document.getElementById("prop-tile-score").value = activeBlock.score !== undefined ? activeBlock.score : 0;
+
+  // Toggle Reset vs Delete Custom Block button visibility
+  const btnReset = document.getElementById("btn-prop-reset");
+  const btnDelProp = document.getElementById("btn-delete-custom-block-prop");
+  if (btnReset && btnDelProp) {
+    if (state.customBlocks[activeBlock.id]) {
+      btnDelProp.classList.remove("hidden");
+      btnReset.classList.add("hidden");
+    } else {
+      btnDelProp.classList.add("hidden");
+      btnReset.classList.remove("hidden");
+    }
+  }
 
   // Visual Custom Javascript script hook
   document.getElementById("prop-tile-js").value = activeBlock.js || "";
@@ -2426,6 +2508,25 @@ function setupEventListeners() {
       applySpriteVisualChanges();
     });
   }
+
+  const btnDelProp = document.getElementById("btn-delete-custom-block-prop");
+  if (btnDelProp) {
+    btnDelProp.addEventListener("click", () => {
+      const block = getInspectedBlock();
+      if (block && state.customBlocks[block.id]) {
+        deleteCustomBlock(block.id);
+      }
+    });
+  }
+
+  const btnDelSprite = document.getElementById("btn-delete-custom-block-sprite");
+  if (btnDelSprite) {
+    btnDelSprite.addEventListener("click", () => {
+      if (state.selectedSpriteId && state.customBlocks[state.selectedSpriteId]) {
+        deleteCustomBlock(state.selectedSpriteId);
+      }
+    });
+  }
 }
 
 function applySpriteVisualChanges() {
@@ -2865,6 +2966,15 @@ function selectSpriteForEditing(id) {
   document.getElementById("sprite-emoji-custom-input").value = block.emoji || "";
   document.getElementById("sprite-color-input").value = block.color;
   document.getElementById("sprite-color-lbl").textContent = block.color.toUpperCase();
+
+  const btnDelSprite = document.getElementById("btn-delete-custom-block-sprite");
+  if (btnDelSprite) {
+    if (state.customBlocks[id]) {
+      btnDelSprite.classList.remove("hidden");
+    } else {
+      btnDelSprite.classList.add("hidden");
+    }
+  }
 }
 
 function handleAiSendPrompt() {
