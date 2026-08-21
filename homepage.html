@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blocks - Retro Game Maker & IDE</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Dark Theme Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1f2937;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #4b5563;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6b7280;
+    }
+    /* Pulse Animation */
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.03); opacity: 1; }
+    }
+    .animate-pulse-glow {
+      animation: pulse-glow 3s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col font-sans selection:bg-purple-600 selection:text-white">
+
+  <!-- NoScript Fallback Message -->
+  <noscript>
+    <div class="fixed inset-0 bg-gray-950/95 z-[100] flex items-center justify-center p-4">
+      <div class="bg-gray-900 border border-purple-900/60 rounded-2xl p-6 max-w-md w-full shadow-2xl text-center space-y-4">
+        <div class="bg-purple-900/40 p-3 rounded-full w-12 h-12 flex items-center justify-center mx-auto text-purple-400 text-xl border border-purple-700/50">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h2 class="text-lg font-bold text-white">JavaScript Required</h2>
+        <p class="text-xs text-gray-300 leading-relaxed">
+          Blocks Retro Game Maker requires JavaScript to run the editor, engine, and Canvas workspace.
+        </p>
+        <a href="noscript.html" class="inline-block px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-purple-900/30">
+          View Setup Instructions
+        </a>
+      </div>
+    </div>
+  </noscript>
+
+  <!-- TOP HEADER / NAVIGATION -->
+  <header class="bg-gray-900/90 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50 px-4 md:px-8 py-3 flex items-center justify-between">
+    <!-- Logo Link -->
+    <a href="homepage.html" class="flex items-center space-x-3 group transition">
+      <div class="bg-gradient-to-tr from-purple-600 to-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-purple-900/30 group-hover:scale-105 transition duration-200">
+        <i class="fas fa-cubes text-xl"></i>
+      </div>
+      <div>
+        <h1 class="font-extrabold text-lg tracking-wide bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">BLOCKS</h1>
+        <p class="text-[10px] text-gray-400 font-mono">Retro Game IDE v1.0</p>
+      </div>
+    </a>
+
+    <!-- Header Actions -->
+    <div class="flex items-center space-x-3">
+      <a href="noscript.html" class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition">
+        <i class="fas fa-info-circle text-purple-400"></i>
+        <span>Setup Info</span>
+      </a>
+      <a href="index.html" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-purple-900/30 flex items-center space-x-2">
+        <i class="fas fa-gamepad"></i>
+        <span>Launch Editor</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="relative py-16 md:py-24 px-4 md:px-8 max-w-6xl mx-auto text-center flex flex-col items-center justify-center space-y-6">
+    <!-- Ambient Glow Background -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Badge -->
+    <div class="inline-flex items-center space-x-2 bg-purple-950/80 border border-purple-800/60 rounded-full px-3.5 py-1 text-xs font-mono text-purple-300">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+      <span>Retro 2D Browser Game Engine & IDE</span>
+    </div>
+
+    <!-- Title -->
+    <h1 class="text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white max-w-4xl leading-tight">
+      Build, Play & Export <br class="hidden sm:inline">
+      <span class="bg-gradient-to-r from-purple-400 via-indigo-300 to-teal-400 bg-clip-text text-transparent">Retro 2D Games Instantly</span>
+    </h1>
+
+    <!-- Subtitle -->
+    <p class="text-sm md:text-base text-gray-400 max-w-2xl leading-relaxed">
+      Blocks is a browser-based visual game studio. Paint tilemaps, configure interactive behavior rules, harness AI Agent Copilots, and export self-contained playable web bundles ready for GitHub Pages.
+    </p>
+
+    <!-- CTAs -->
+    <div class="flex flex-wrap items-center justify-center gap-4 pt-4">
+      <a href="index.html" class="px-6 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm rounded-xl transition shadow-xl shadow-purple-900/40 flex items-center space-x-2.5 hover:scale-105 duration-200">
+        <i class="fas fa-play text-base"></i>
+        <span>Launch Game Studio</span>
+      </a>
+      <a href="#features" class="px-6 py-3.5 bg-gray-900 hover:bg-gray-850 border border-gray-800 text-gray-300 hover:text-white font-semibold text-sm rounded-xl transition flex items-center space-x-2">
+        <i class="fas fa-compass"></i>
+        <span>Explore Features</span>
+      </a>
+    </div>
+
+    <!-- Hero Visual Preview Card -->
+    <div class="w-full max-w-4xl mt-12 bg-gray-900 border border-purple-900/40 rounded-2xl p-4 md:p-6 shadow-2xl relative overflow-hidden">
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3 mb-4 text-xs font-mono text-gray-400">
+        <div class="flex items-center space-x-2">
+          <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+          <span class="w-3 h-3 rounded-full bg-yellow-500/80 inline-block"></span>
+          <span class="w-3 h-3 rounded-full bg-green-500/80 inline-block"></span>
+          <span class="ml-2 font-semibold text-gray-300">Blocks Visual Studio Canvas</span>
+        </div>
+        <div class="flex items-center space-x-3 text-purple-400">
+          <span><i class="fas fa-th mr-1"></i>30 x 16 Grid</span>
+          <span><i class="fas fa-bolt mr-1"></i>60 FPS Engine</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+        <!-- Feature Highlight 1 -->
+        <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-2">
+          <div class="text-purple-400 text-lg"><i class="fas fa-paint-brush"></i></div>
+          <h3 class="font-bold text-sm text-white">Visual Tile Painting</h3>
+          <p class="text-xs text-gray-400 leading-relaxed font-mono">Paint platforms, hazards, collectibles, and enemy spawn tiles with real-time zoom & pan controls.</p>
+        </div>
+
+        <!-- Feature Highlight 2 -->
+        <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-2">
+          <div class="text-indigo-400 text-lg"><i class="fas fa-code"></i></div>
+          <h3 class="font-bold text-sm text-white">Visual & Custom JS Logic</h3>
+          <p class="text-xs text-gray-400 leading-relaxed font-mono">Hook events to trigger actions or execute custom sandbox JS scripts with autocomplete.</p>
+        </div>
+
+        <!-- Feature Highlight 3 -->
+        <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-2">
+          <div class="text-teal-400 text-lg"><i class="fab fa-github"></i></div>
+          <h3 class="font-bold text-sm text-white">GitHub Pages Deployment</h3>
+          <p class="text-xs text-gray-400 leading-relaxed font-mono">Export a self-contained single-file .html web bundle that plays anywhere with zero dependencies.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES GRID SECTION -->
+  <section id="features" class="py-16 px-4 md:px-8 bg-gray-900/60 border-t border-b border-gray-800">
+    <div class="max-w-6xl mx-auto space-y-12">
+      <div class="text-center space-y-3">
+        <h2 class="text-xs uppercase font-bold text-purple-400 font-mono tracking-widest">Core Capabilities</h2>
+        <p class="text-2xl md:text-3xl font-extrabold text-white">Everything You Need to Create & Publish</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Feature 1 -->
+        <div class="bg-gray-950 p-6 rounded-2xl border border-gray-800 space-y-3 hover:border-purple-600/50 transition">
+          <div class="w-10 h-10 rounded-xl bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 text-lg">
+            <i class="fas fa-gamepad"></i>
+          </div>
+          <h3 class="font-bold text-base text-white">Platformer & Top-Down Genres</h3>
+          <p class="text-xs text-gray-400 leading-relaxed font-mono">
+            Switch seamlessly between Platformer (gravity-based jump physics) and Top-Down (RPG / maze exploration) game modes with customizable speed and gravity parameters.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="bg-gray-950 p-6 rounded-2xl border border-gray-800 space-y-3 hover:border-purple-600/50 transition">
+          <div class="w-10 h-10 rounded-xl bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 text-lg">
+            <i class="fas fa-brain"></i>
+          </div>
+          <h3 class="font-bold text-base text-white">AI Copilot & Infinite Generator</h3>
+          <p class="text-xs text-gray-400 leading-relaxed font-mono">
+            Use procedural heuristic AI to construct custom scripts or seed-based procedural level challenges across millions of interactive layout combinations.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="bg-gray-950 p-6 rounded-2xl border border-gray-800 space-y-3 hover:border-purple-600/50 transition">
+          <div class="w-10 h-10 rounded-xl bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 text-lg">
+            <i class="fas fa-palette"></i>
+          </div>
+          <h3 class="font-bold text-base text-white">Sprite & Custom Block Editor</h3>
+          <p class="text-xs text-gray-400 leading-relaxed font-mono">
+            Create custom block types with unique emojis, palette base colors, solid collisions, collectible points, or hazardous trap properties.
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="bg-gray-950 p-6 rounded-2xl border border-gray-800 space-y-3 hover:border-purple-600/50 transition">
+          <div class="w-10 h-10 rounded-xl bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 text-lg">
+            <i class="fas fa-graduation-cap"></i>
+          </div>
+          <h3 class="font-bold text-base text-white">Interactive Tutorials Academy</h3>
+          <p class="text-xs text-gray-400 leading-relaxed font-mono">
+            Step-by-step interactive academies and dynamic checklists guide players through level design basics, key collection, doors, and enemy hazards.
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="bg-gray-950 p-6 rounded-2xl border border-gray-800 space-y-3 hover:border-purple-600/50 transition">
+          <div class="w-10 h-10 rounded-xl bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 text-lg">
+            <i class="fas fa-folder-open"></i>
+          </div>
+          <h3 class="font-bold text-base text-white">Local File Manager</h3>
+          <p class="text-xs text-gray-400 leading-relaxed font-mono">
+            Save multiple level projects directly in browser local storage. Import and export JSON level files with full state persistence.
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="bg-gray-950 p-6 rounded-2xl border border-gray-800 space-y-3 hover:border-purple-600/50 transition">
+          <div class="w-10 h-10 rounded-xl bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 text-lg">
+            <i class="fas fa-volume-up"></i>
+          </div>
+          <h3 class="font-bold text-base text-white">Retro Synthesizer Sound SFX</h3>
+          <p class="text-xs text-gray-400 leading-relaxed font-mono">
+            Built-in Web Audio API oscillator synthesizer renders retro sound effects for jumping, collecting coins, taking damage, and level victories.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUICK START / CTA BANNER -->
+  <section class="py-16 px-4 md:px-8 max-w-4xl mx-auto text-center space-y-6">
+    <div class="bg-gradient-to-r from-purple-900/50 via-indigo-900/50 to-purple-900/50 border border-purple-500/40 rounded-3xl p-8 md:p-12 shadow-2xl space-y-6">
+      <div class="w-14 h-14 bg-purple-600 text-white rounded-2xl flex items-center justify-center text-2xl mx-auto shadow-lg shadow-purple-900/50">
+        <i class="fas fa-cubes"></i>
+      </div>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-white">Ready to Design Your First Game?</h2>
+      <p class="text-xs md:text-sm text-gray-300 max-w-lg mx-auto leading-relaxed">
+        No setup or installation needed. Jump directly into the editor and bring your retro game ideas to life right in your browser.
+      </p>
+      <div class="pt-2">
+        <a href="index.html" class="inline-flex items-center space-x-2 px-8 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm rounded-xl transition shadow-xl shadow-purple-900/40">
+          <i class="fas fa-play"></i>
+          <span>Open Blocks Editor</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-gray-900 border-t border-gray-800 py-8 px-4 md:px-8 mt-auto text-xs text-gray-500 font-mono">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <a href="homepage.html" class="flex items-center space-x-2 text-gray-300 hover:text-white transition">
+          <i class="fas fa-cubes text-purple-400 text-base"></i>
+          <span class="font-bold text-sm tracking-wide">BLOCKS</span>
+        </a>
+        <span>&bull;</span>
+        <span>Copyright 2026 EiJackGH Productions</span>
+      </div>
+
+      <div class="flex items-center space-x-6">
+        <a href="index.html" class="hover:text-gray-300 transition">Editor</a>
+        <a href="noscript.html" class="hover:text-gray-300 transition">Setup Guide</a>
+        <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="hover:text-gray-300 transition"><i class="fab fa-github text-sm"></i></a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
