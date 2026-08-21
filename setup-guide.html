@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup & User Guide - Blocks Retro Game Maker</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Dark Theme Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1f2937;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #4b5563;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6b7280;
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col font-sans selection:bg-purple-600 selection:text-white">
+
+  <!-- NoScript Fallback Message -->
+  <noscript>
+    <div class="fixed inset-0 bg-gray-950/95 z-[100] flex items-center justify-center p-4">
+      <div class="bg-gray-900 border border-purple-900/60 rounded-2xl p-6 max-w-md w-full shadow-2xl text-center space-y-4">
+        <div class="bg-purple-900/40 p-3 rounded-full w-12 h-12 flex items-center justify-center mx-auto text-purple-400 text-xl border border-purple-700/50">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h2 class="text-lg font-bold text-white">JavaScript Required</h2>
+        <p class="text-xs text-gray-300 leading-relaxed">
+          Blocks Retro Game Maker requires JavaScript to run the interactive editor, physics engine, and Canvas workspace.
+        </p>
+        <a href="noscript.html" class="inline-block px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-purple-900/30">
+          Browser Setup Help
+        </a>
+      </div>
+    </div>
+  </noscript>
+
+  <!-- TOP HEADER / NAVIGATION -->
+  <header class="bg-gray-900/90 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50 px-4 md:px-8 py-3 flex items-center justify-between">
+    <!-- Logo Link -->
+    <a href="homepage.html" class="flex items-center space-x-3 group transition">
+      <div class="bg-gradient-to-tr from-purple-600 to-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-purple-900/30 group-hover:scale-105 transition duration-200">
+        <i class="fas fa-cubes text-xl"></i>
+      </div>
+      <div>
+        <h1 class="font-extrabold text-lg tracking-wide bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">BLOCKS</h1>
+        <p class="text-[10px] text-gray-400 font-mono">Setup & User Guide</p>
+      </div>
+    </a>
+
+    <!-- Header Actions -->
+    <div class="flex items-center space-x-3">
+      <a href="homepage.html" class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-white transition">
+        <i class="fas fa-home text-purple-400"></i>
+        <span>Home</span>
+      </a>
+      <a href="index.html" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-purple-900/30 flex items-center space-x-2">
+        <i class="fas fa-gamepad"></i>
+        <span>Launch Studio</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- HERO BANNER -->
+  <section class="relative py-12 md:py-16 px-4 md:px-8 bg-gradient-to-b from-gray-900 to-gray-950 border-b border-gray-800">
+    <div class="max-w-4xl mx-auto text-center space-y-4">
+      <div class="inline-flex items-center space-x-2 bg-purple-950/80 border border-purple-800/60 rounded-full px-3.5 py-1 text-xs font-mono text-purple-300">
+        <i class="fas fa-book-reader text-purple-400"></i>
+        <span>Documentation & Getting Started</span>
+      </div>
+      <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight text-white">
+        Blocks IDE <span class="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Setup & User Guide</span>
+      </h1>
+      <p class="text-xs md:text-sm text-gray-400 max-w-2xl mx-auto leading-relaxed">
+        Everything you need to set up your environment, design custom 2D retro levels, write event scripts, and export self-contained playable games.
+      </p>
+    </div>
+  </section>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="max-w-5xl mx-auto px-4 md:px-8 py-10 flex flex-col md:flex-row gap-8">
+
+    <!-- SIDEBAR NAVIGATION / TOC -->
+    <aside class="w-full md:w-64 flex-shrink-0">
+      <div class="sticky top-20 bg-gray-900 border border-gray-800 rounded-2xl p-4 space-y-3 shadow-xl">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-purple-400 font-mono flex items-center space-x-1.5">
+          <i class="fas fa-list-ul"></i>
+          <span>Guide Directory</span>
+        </h3>
+        <nav class="space-y-1 text-xs font-mono">
+          <a href="#quick-start" class="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 transition flex items-center space-x-2">
+            <i class="fas fa-rocket text-purple-400 w-4"></i>
+            <span>1. Quick Start</span>
+          </a>
+          <a href="#requirements" class="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 transition flex items-center space-x-2">
+            <i class="fas fa-cogs text-purple-400 w-4"></i>
+            <span>2. Requirements</span>
+          </a>
+          <a href="#editor-overview" class="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 transition flex items-center space-x-2">
+            <i class="fas fa-desktop text-purple-400 w-4"></i>
+            <span>3. Studio Layout</span>
+          </a>
+          <a href="#logic-scripting" class="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 transition flex items-center space-x-2">
+            <i class="fas fa-code text-purple-400 w-4"></i>
+            <span>4. Visual Logic & JS</span>
+          </a>
+          <a href="#publishing" class="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 transition flex items-center space-x-2">
+            <i class="fab fa-github text-purple-400 w-4"></i>
+            <span>5. Exporting Games</span>
+          </a>
+          <a href="#faqs" class="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 transition flex items-center space-x-2">
+            <i class="fas fa-question-circle text-purple-400 w-4"></i>
+            <span>6. FAQ</span>
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- CONTENT SECTIONS -->
+    <div class="flex-1 space-y-12">
+
+      <!-- SECTION 1: QUICK START -->
+      <section id="quick-start" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4 shadow-xl">
+        <div class="flex items-center space-x-3 border-b border-gray-800 pb-3">
+          <div class="w-8 h-8 rounded-lg bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 font-bold">
+            1
+          </div>
+          <h2 class="text-xl font-bold text-white">Quick Start</h2>
+        </div>
+
+        <p class="text-xs md:text-sm text-gray-300 leading-relaxed">
+          Blocks is a zero-setup, browser-native game engine and visual IDE. You do not need to install Node.js, build tools, or browser extensions to start creating.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono pt-2">
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-2">
+            <div class="text-purple-400 text-base"><i class="fas fa-play-circle"></i></div>
+            <div class="font-bold text-white">1. Open Studio</div>
+            <p class="text-gray-400 text-[11px] leading-relaxed">Launch <a href="index.html" class="text-purple-400 hover:underline">index.html</a> in any standard modern web browser.</p>
+          </div>
+
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-2">
+            <div class="text-indigo-400 text-base"><i class="fas fa-cubes"></i></div>
+            <div class="font-bold text-white">2. Load Template</div>
+            <p class="text-gray-400 text-[11px] leading-relaxed">Pick a starter template like Platformer or Maze Raider from the top bar.</p>
+          </div>
+
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-2">
+            <div class="text-teal-400 text-base"><i class="fas fa-gamepad"></i></div>
+            <div class="font-bold text-white">3. Paint & Play</div>
+            <p class="text-gray-400 text-[11px] leading-relaxed">Switch to Paint mode to draw tiles, then click Play Mode to test physics in real time.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: SYSTEM REQUIREMENTS & JS SETUP -->
+      <section id="requirements" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4 shadow-xl">
+        <div class="flex items-center space-x-3 border-b border-gray-800 pb-3">
+          <div class="w-8 h-8 rounded-lg bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 font-bold">
+            2
+          </div>
+          <h2 class="text-xl font-bold text-white">System & Browser Requirements</h2>
+        </div>
+
+        <p class="text-xs md:text-sm text-gray-300 leading-relaxed">
+          Blocks relies on modern web standard features including HTML5 Canvas, Web Audio API, LocalStorage, and ES6 JavaScript. Ensure JavaScript is enabled in your browser settings.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <!-- Chrome & Edge -->
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-1">
+            <div class="font-bold text-gray-200 flex items-center space-x-2">
+              <i class="fab fa-chrome text-purple-400"></i>
+              <span>Google Chrome & Microsoft Edge</span>
+            </div>
+            <p class="text-[11px] text-gray-400 font-mono leading-relaxed">
+              Navigate to Settings &gt; Privacy and security &gt; Site Settings &gt; JavaScript. Ensure "Sites can use JavaScript" is toggled ON.
+            </p>
+          </div>
+
+          <!-- Mozilla Firefox -->
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-1">
+            <div class="font-bold text-gray-200 flex items-center space-x-2">
+              <i class="fab fa-firefox-browser text-purple-400"></i>
+              <span>Mozilla Firefox</span>
+            </div>
+            <p class="text-[11px] text-gray-400 font-mono leading-relaxed">
+              Type <code class="text-purple-300">about:config</code> in your address bar, search for <code class="text-purple-300">javascript.enabled</code>, and verify it is set to <code class="text-purple-300">true</code>.
+            </p>
+          </div>
+
+          <!-- Apple Safari -->
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-1">
+            <div class="font-bold text-gray-200 flex items-center space-x-2">
+              <i class="fab fa-safari text-purple-400"></i>
+              <span>Apple Safari</span>
+            </div>
+            <p class="text-[11px] text-gray-400 font-mono leading-relaxed">
+              Open Safari Settings &gt; Security tab &gt; Ensure the checkbox for "Enable JavaScript" is checked.
+            </p>
+          </div>
+
+          <!-- Mobile Touch Devices -->
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-1">
+            <div class="font-bold text-gray-200 flex items-center space-x-2">
+              <i class="fas fa-mobile-alt text-purple-400"></i>
+              <span>Mobile & Touch Controls</span>
+            </div>
+            <p class="text-[11px] text-gray-400 font-mono leading-relaxed">
+              Mobile Mode enables touch virtual D-Pad and Jump controls automatically on touchscreen devices.
+            </p>
+          </div>
+        </div>
+
+        <div class="p-3 bg-purple-950/40 border border-purple-800/50 rounded-xl text-xs text-purple-200 flex items-center space-x-3">
+          <i class="fas fa-info-circle text-purple-400 text-base flex-shrink-0"></i>
+          <span>Having trouble loading JavaScript? Check our dedicated <a href="noscript.html" class="underline font-bold text-white hover:text-purple-300">NoScript Troubleshooting Page</a>.</span>
+        </div>
+      </section>
+
+      <!-- SECTION 3: STUDIO LAYOUT & CONTROLS -->
+      <section id="editor-overview" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4 shadow-xl">
+        <div class="flex items-center space-x-3 border-b border-gray-800 pb-3">
+          <div class="w-8 h-8 rounded-lg bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 font-bold">
+            3
+          </div>
+          <h2 class="text-xl font-bold text-white">Studio Interface Layout</h2>
+        </div>
+
+        <p class="text-xs md:text-sm text-gray-300 leading-relaxed">
+          The editor workspace is organized into three main regions designed for smooth, rapid level creation:
+        </p>
+
+        <div class="space-y-3 text-xs">
+          <!-- Left Panel -->
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-1">
+            <h3 class="font-bold text-purple-300 flex items-center space-x-2">
+              <i class="fas fa-tools"></i>
+              <span>Left Panel: Drawing Tools & Palette</span>
+            </h3>
+            <p class="text-gray-400 font-mono leading-relaxed">
+              Contains the active tool selector (Brush, Eraser, Fill Bucket, Inspect) alongside categorized tiles: Solids, Hazards, Interactives, Characters, and Custom Blocks.
+            </p>
+          </div>
+
+          <!-- Center Canvas -->
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-1">
+            <h3 class="font-bold text-purple-300 flex items-center space-x-2">
+              <i class="fas fa-border-all"></i>
+              <span>Center Workspace: Canvas Grid</span>
+            </h3>
+            <p class="text-gray-400 font-mono leading-relaxed">
+              Interactive 2D level canvas with zoom/pan controls (<kbd class="bg-gray-800 px-1 rounded text-purple-300">Shift + Drag</kbd> to pan, mouse wheel to zoom). Switch between Design Mode and Play Mode instantly.
+            </p>
+          </div>
+
+          <!-- Right Sidebar -->
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-1">
+            <h3 class="font-bold text-purple-300 flex items-center space-x-2">
+              <i class="fas fa-sliders-h"></i>
+              <span>Right Panel: Properties, Logic, AI & Files</span>
+            </h3>
+            <ul class="list-disc list-inside text-gray-400 font-mono space-y-1 pl-2">
+              <li><strong class="text-gray-200">Properties:</strong> Configure block collision, damage power, score values, and base colors.</li>
+              <li><strong class="text-gray-200">Scripts:</strong> Attach visual event rules and write custom JavaScript functions.</li>
+              <li><strong class="text-gray-200">Sprites:</strong> Choose emojis and palette base colors for blocks and actors.</li>
+              <li><strong class="text-gray-200">AI Copilot:</strong> Generate custom level layouts and scripts using natural language prompts.</li>
+              <li><strong class="text-gray-200">Files:</strong> Save, export, import, and manage multiple level projects locally.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: VISUAL LOGIC & CUSTOM SCRIPTING -->
+      <section id="logic-scripting" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4 shadow-xl">
+        <div class="flex items-center space-x-3 border-b border-gray-800 pb-3">
+          <div class="w-8 h-8 rounded-lg bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 font-bold">
+            4
+          </div>
+          <h2 class="text-xl font-bold text-white">Visual Logic & Custom Scripting</h2>
+        </div>
+
+        <p class="text-xs md:text-sm text-gray-300 leading-relaxed">
+          Blocks provides both visual no-code triggers and full JavaScript runtime hooks for power users.
+        </p>
+
+        <!-- API Objects Table -->
+        <div class="bg-gray-950 rounded-xl border border-gray-850 overflow-hidden text-xs">
+          <div class="bg-gray-900 p-3 font-bold text-purple-300 font-mono border-b border-gray-850">
+            Available Script Runtime API Globals
+          </div>
+          <div class="divide-y divide-gray-850 font-mono">
+            <div class="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <code class="text-indigo-300 font-bold">player.vy = -12;</code>
+              <span class="text-gray-400 text-[11px]">Modifies player vertical velocity (e.g., super jump bounce).</span>
+            </div>
+            <div class="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <code class="text-indigo-300 font-bold">game.addCoins(5);</code>
+              <span class="text-gray-400 text-[11px]">Awards bonus score coins to the active game state.</span>
+            </div>
+            <div class="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <code class="text-indigo-300 font-bold">sound.play('coin');</code>
+              <span class="text-gray-400 text-[11px]">Triggers built-in Web Audio retro synthesizer SFX ('jump', 'coin', 'hit', 'win').</span>
+            </div>
+            <div class="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <code class="text-indigo-300 font-bold">game.gravity = 0;</code>
+              <span class="text-gray-400 text-[11px]">Dynamically adjusts gravity or physics variables.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Code Validation Note -->
+        <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-2 text-xs font-mono">
+          <div class="font-bold text-amber-400 flex items-center space-x-2">
+            <i class="fas fa-shield-alt"></i>
+            <span>Static Code Analysis & Validation</span>
+          </div>
+          <p class="text-gray-400 leading-relaxed">
+            The studio includes a real-time static code analysis engine that flags syntax errors, prohibited browser globals (such as <code class="text-red-300">window</code> or <code class="text-red-300">document</code>), infinite loop constructs, and unrecognized top-level variables before running.
+          </p>
+        </div>
+      </section>
+
+      <!-- SECTION 5: EXPORTING & GITHUB PAGES -->
+      <section id="publishing" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4 shadow-xl">
+        <div class="flex items-center space-x-3 border-b border-gray-800 pb-3">
+          <div class="w-8 h-8 rounded-lg bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 font-bold">
+            5
+          </div>
+          <h2 class="text-xl font-bold text-white">Exporting Games for GitHub Pages</h2>
+        </div>
+
+        <p class="text-xs md:text-sm text-gray-300 leading-relaxed">
+          Once your game design is complete, you can export a self-contained web bundle ready for hosting on GitHub Pages or any static web web server.
+        </p>
+
+        <div class="space-y-3 text-xs font-mono">
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-2">
+            <div class="font-bold text-emerald-400 flex items-center space-x-2">
+              <i class="fab fa-github text-base"></i>
+              <span>Step 1: Click "Build Pages Dist"</span>
+            </div>
+            <p class="text-gray-400 text-[11px] leading-relaxed">
+              In the top bar or right sidebar, click <strong class="text-white">Build Pages Dist</strong> to download a single self-contained <code class="text-purple-300">.html</code> file containing your entire level grid, sprite graphics, physics, and custom code.
+            </p>
+          </div>
+
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-2">
+            <div class="font-bold text-emerald-400 flex items-center space-x-2">
+              <i class="fas fa-upload text-base"></i>
+              <span>Step 2: Commit to GitHub</span>
+            </div>
+            <p class="text-gray-400 text-[11px] leading-relaxed">
+              Add the exported HTML file to your repository root (e.g. as <code class="text-purple-300">index.html</code>) and push to your main branch.
+            </p>
+          </div>
+
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-2">
+            <div class="font-bold text-emerald-400 flex items-center space-x-2">
+              <i class="fas fa-globe text-base"></i>
+              <span>Step 3: Enable GitHub Pages</span>
+            </div>
+            <p class="text-gray-400 text-[11px] leading-relaxed">
+              In your GitHub Repository Settings &gt; Pages, set the source to deploy from the main branch. Your game will be live instantly!
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 6: FAQS -->
+      <section id="faqs" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4 shadow-xl">
+        <div class="flex items-center space-x-3 border-b border-gray-800 pb-3">
+          <div class="w-8 h-8 rounded-lg bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400 font-bold">
+            6
+          </div>
+          <h2 class="text-xl font-bold text-white">Frequently Asked Questions</h2>
+        </div>
+
+        <div class="space-y-4 text-xs">
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-1">
+            <h3 class="font-bold text-white text-sm">Where are my level designs saved?</h3>
+            <p class="text-gray-400 font-mono leading-relaxed">
+              Saved level projects are stored locally inside your browser's persistent <code class="text-purple-300">localStorage</code>. You can also export `.json` file backups anytime from the Files panel.
+            </p>
+          </div>
+
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-1">
+            <h3 class="font-bold text-white text-sm">Can I switch genres mid-level?</h3>
+            <p class="text-gray-400 font-mono leading-relaxed">
+              Yes! Use the Genre selector in the top bar to toggle between Platformer (gravity jump physics) and Top-Down (RPG/maze exploration).
+            </p>
+          </div>
+
+          <div class="bg-gray-950 p-4 rounded-xl border border-gray-850 space-y-1">
+            <h3 class="font-bold text-white text-sm">Does exported game bundle need external servers?</h3>
+            <p class="text-gray-400 font-mono leading-relaxed">
+              No. Exported web bundles are 100% self-contained HTML files that include all engine code, tile rendering, sound synthesis, and logic offline.
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- CTA FOOTER BANNER -->
+  <section class="py-12 px-4 md:px-8 max-w-4xl mx-auto text-center">
+    <div class="bg-gradient-to-r from-purple-900/50 via-indigo-900/50 to-purple-900/50 border border-purple-500/40 rounded-3xl p-8 shadow-2xl space-y-4">
+      <h2 class="text-2xl font-extrabold text-white">Ready to start creating?</h2>
+      <p class="text-xs text-gray-300 max-w-md mx-auto">
+        Jump directly into the studio workspace and start building retro games in your browser.
+      </p>
+      <div>
+        <a href="index.html" class="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-purple-900/40">
+          <i class="fas fa-play"></i>
+          <span>Open Blocks Studio</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-gray-900 border-t border-gray-800 py-8 px-4 md:px-8 mt-auto text-xs text-gray-500 font-mono">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <a href="homepage.html" class="flex items-center space-x-2 text-gray-300 hover:text-white transition">
+          <i class="fas fa-cubes text-purple-400 text-base"></i>
+          <span class="font-bold text-sm tracking-wide">BLOCKS</span>
+        </a>
+        <span>&bull;</span>
+        <span>Copyright 2026 EiJackGH Productions</span>
+      </div>
+
+      <div class="flex items-center space-x-6">
+        <a href="homepage.html" class="hover:text-gray-300 transition">Home</a>
+        <a href="index.html" class="hover:text-gray-300 transition">Editor</a>
+        <a href="setup-guide.html" class="hover:text-gray-300 transition">Setup Guide</a>
+        <a href="noscript.html" class="hover:text-gray-300 transition">NoScript Info</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
