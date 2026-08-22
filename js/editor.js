@@ -3652,6 +3652,7 @@ function setupJsAutocomplete() {
     { label: "sound", insert: "sound", desc: "Sound effects API (play)" },
     { label: "tile", insert: "tile", desc: "Current triggered tile instance" },
     { label: "state", insert: "state", desc: "Global level settings & physics" },
+    { label: "define", insert: "const VALUE = 100;", desc: "Define a custom variable or constant" },
 
     // player members
     { prefix: "player.", label: "player.vx", insert: "player.vx", desc: "Horizontal velocity" },
