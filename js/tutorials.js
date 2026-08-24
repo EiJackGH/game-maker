@@ -686,6 +686,60 @@ const TUTORIALS = [
         }
       }
     ]
+  },
+  {
+    id: "ping_pong_custom_js",
+    title: "16. Ping Pong Game with Custom Javascript",
+    desc: "Build a classic Ping Pong paddle & ball arcade game using Custom JavaScript! Program bouncing ball physics and test in Play Mode.",
+    steps: [
+      {
+        title: "Switch Genre to Top-Down",
+        check: () => {
+          return state.genre === "topdown";
+        }
+      },
+      {
+        title: "Inspect a Ping Pong tile or block (🏓/⚪)",
+        check: () => {
+          const activeBlock = getInspectedBlock();
+          return (
+            activeBlock &&
+            (activeBlock.id === "ping_pong_paddle" ||
+              activeBlock.id === "ping_pong_ball" ||
+              (activeBlock.name && activeBlock.name.toLowerCase().includes("pong")) ||
+              activeBlock.emoji === "🏓" ||
+              activeBlock.emoji === "⚪")
+          );
+        }
+      },
+      {
+        title: "Write Custom JS code for Ping Pong logic",
+        check: () => {
+          const activeBlock = getInspectedBlock();
+          return activeBlock && typeof activeBlock.js === "string" && activeBlock.js.trim().length > 0;
+        }
+      },
+      {
+        title: "Place a Player Spawn (🧙)",
+        check: () => {
+          for (let r = 0; r < state.rows; r++) {
+            for (let c = 0; c < state.cols; c++) {
+              if (state.grid[r][c] && state.grid[r][c].id === "player_spawn") {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+      },
+      {
+        title: "Test Ping Pong game in Play Mode & Win!",
+        check: () => {
+          const winBanner = document.getElementById("game-win-banner");
+          return winBanner && !winBanner.classList.contains("hidden");
+        }
+      }
+    ]
   }
 ];
 
@@ -1189,6 +1243,60 @@ function selectTutorial(idx) {
     }
     // Pre-place a snowball on the grid as a starter
     state.grid[12][15] = JSON.parse(JSON.stringify(state.customBlocks["snowball"]));
+  } else if (idx === 15) {
+    // Ping Pong Game with Custom Javascript
+    state.genre = "topdown";
+    state.gravity = 0;
+    state.speed = 4.0;
+    const g = getBlockById;
+
+    // Top and bottom border walls
+    for (let c = 0; c < 30; c++) {
+      state.grid[0][c] = g("brick");
+      state.grid[15][c] = g("brick");
+    }
+
+    // Pre-configure Ping Pong custom paddle & ball blocks if not present
+    if (!state.customBlocks["ping_pong_paddle"]) {
+      state.customBlocks["ping_pong_paddle"] = {
+        id: "ping_pong_paddle",
+        name: "Ping Pong Paddle",
+        category: "solid",
+        color: "#3b82f6",
+        emoji: "🏓",
+        solid: true,
+        damage: 0,
+        score: 0,
+        scripts: [
+          { event: "collide", action: "play_sound", params: { type: "jump" } }
+        ],
+        js: "// Ping Pong Paddle Bounce Logic\nsound.play('jump');\ngame.addCoins(1);"
+      };
+    }
+    if (!state.customBlocks["ping_pong_ball"]) {
+      state.customBlocks["ping_pong_ball"] = {
+        id: "ping_pong_ball",
+        name: "Ping Pong Ball",
+        category: "collectible",
+        color: "#f59e0b",
+        emoji: "⚪",
+        solid: false,
+        damage: 0,
+        score: 5,
+        scripts: [
+          { event: "collide", action: "play_sound", params: { type: "coin" } },
+          { event: "collide", action: "add_score", params: { amount: 5 } }
+        ],
+        js: "// Ping Pong Ball Custom Script\nsound.play('coin');\ngame.addCoins(5);"
+      };
+    }
+    buildPalettes();
+
+    // Place Player Spawn, Paddle, Ball and Goal Portal
+    state.grid[7][2] = g("player_spawn");
+    state.grid[7][26] = JSON.parse(JSON.stringify(state.customBlocks["ping_pong_paddle"]));
+    state.grid[7][15] = JSON.parse(JSON.stringify(state.customBlocks["ping_pong_ball"]));
+    state.grid[7][28] = g("portal");
   } else if (TUTORIALS[idx] && TUTORIALS[idx].proceduralConfig) {
     // PROCEDURAL GENERATED SETUP
     const config = TUTORIALS[idx].proceduralConfig;
@@ -1340,13 +1448,14 @@ function getDifficultyBadge(idx) {
     { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" },       // 12. Sprite Styling Studio
     { label: "Expert", bg: "bg-red-950", text: "text-red-300" },               // 13. WW1 Trench Warfare
     { label: "Coding", bg: "bg-indigo-950", text: "text-indigo-300" },         // 14. Quickstart in Custom Javascript
-    { label: "Secret", bg: "bg-cyan-950", text: "text-cyan-300" }              // 15. How to Get a Snowball Easter Egg
+    { label: "Secret", bg: "bg-cyan-950", text: "text-cyan-300" },             // 15. How to Get a Snowball Easter Egg
+    { label: "Coding", bg: "bg-indigo-950", text: "text-indigo-300" }          // 16. Ping Pong Game with Custom Javascript
   ];
   return difficulties[idx] || { label: "Creative", bg: "bg-purple-950", text: "text-purple-300" };
 }
 
 function getTutorialEmoji(idx) {
-  const emojis = ["🎨", "🔥", "🔑", "🧱", "🍄", "👾", "🍄", "🪙", "🛠️", "🪐", "🤖", "🎨", "🪖", "💻", "❄️"];
+  const emojis = ["🎨", "🔥", "🔑", "🧱", "🍄", "👾", "🍄", "🪙", "🛠️", "🪐", "🤖", "🎨", "🪖", "💻", "❄️", "🏓"];
   return emojis[idx] || "📚";
 }
 
