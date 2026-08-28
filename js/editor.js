@@ -3021,7 +3021,7 @@ function generateProblemExplanation(p) {
   if (group === "tile_js_prohibited_globals" || group === "palette_js_prohibited_globals") {
     return {
       explanation: "Custom JS scripts run inside a restricted sandbox environment and cannot directly access raw browser globals (like document, window, or fetch).",
-      fix: "Use provided sandbox objects like `player`, `tile`, `game`, `sound`, and `state` instead of direct DOM/window manipulation.",
+      fix: "Use provided sandbox objects like `player`, `tile`, `game`, `sound`, and `state`, `define` instead of direct DOM/window manipulation.",
       prompt: "speed pad script"
     };
   }
